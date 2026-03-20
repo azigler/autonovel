@@ -78,7 +78,6 @@ def save_state(state: dict):
     """Write state to state.json."""
     with open(STATE_FILE, "w") as f:
         json.dump(state, f, indent=2)
-    f.close()
 
 
 # ---------------------------------------------------------------------------
@@ -632,8 +631,8 @@ def run_revision(state: dict, max_cycles: int = MAX_REVISION_CYCLES) -> dict:
             review_logs = sorted(
                 (EDIT_LOGS_DIR).glob("*_review.json"), reverse=True)
             if review_logs:
-                import json as _json
-                review_data = _json.loads(review_logs[0].read_text())
+
+                review_data = json.loads(review_logs[0].read_text())
                 stars = review_data.get("stars", 0) or 0
                 total_items = review_data.get("total_items", 0)
                 major_items = review_data.get("major_items", 0)
