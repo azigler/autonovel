@@ -1,3 +1,5 @@
+<!-- This document describes the underlying writing engine. For the full agent architecture, see README.md and .claude/refs/PLAN.md. -->
+
 # AUTONOVEL: Reproducible Novel Pipeline
 
 ## Overview
