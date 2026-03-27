@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
+import os
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -23,6 +25,13 @@ from api.models import (
     WorkStats,
     WorkSummary,
 )
+
+logger = logging.getLogger(__name__)
+
+
+class AO3Unavailable(Exception):
+    """Raised when AO3 cannot be reached or returns an unexpected error."""
+
 
 # ---------------------------------------------------------------------------
 # Rate limiter
@@ -45,13 +54,13 @@ def _rate_limit() -> None:
 # Cache
 # ---------------------------------------------------------------------------
 
-CACHE_DIR = Path("api/cache")
+CACHE_DIR = Path(os.getenv("AO3_CACHE_DIR", "api/cache"))
 
-# TTLs in seconds
-_TTL_WORK_TEXT = 0  # indefinite
-_TTL_METADATA = 86400  # 1 day
-_TTL_STATS = 86400
-_TTL_COMMENTS = 86400
+# TTLs in seconds — configurable via environment variables
+_TTL_WORK_TEXT = int(os.getenv("AO3_TTL_WORK_TEXT", "0"))  # 0 = indefinite
+_TTL_METADATA = int(os.getenv("AO3_TTL_METADATA", "86400"))  # 1 day
+_TTL_STATS = int(os.getenv("AO3_TTL_STATS", "86400"))
+_TTL_COMMENTS = int(os.getenv("AO3_TTL_COMMENTS", "86400"))
 
 
 def _cache_key(namespace: str, identifier: str) -> Path:
@@ -89,16 +98,52 @@ _HEADERS = {
 }
 
 
+_MAX_RETRIES = 3
+_BACKOFF_BASE = 5.0  # seconds — initial backoff for 429 retries
+
+
 def _get(path: str, params: dict | None = None) -> BeautifulSoup:
-    """Fetch a page from AO3 with rate limiting."""
-    _rate_limit()
+    """Fetch a page from AO3 with rate limiting and 429 retry.
+
+    Retries up to ``_MAX_RETRIES`` times on HTTP 429 (Too Many Requests),
+    using exponential backoff starting at ``_BACKOFF_BASE`` seconds.
+
+    Raises ``AO3Unavailable`` on connection errors or non-recoverable HTTP
+    errors so callers can translate to an appropriate HTTP 502 response.
+    """
     url = f"{_BASE}{path}"
-    with httpx.Client(
-        headers=_HEADERS, follow_redirects=True, timeout=30
-    ) as client:
-        resp = client.get(url, params=params)
-        resp.raise_for_status()
-    return BeautifulSoup(resp.text, "html.parser")
+    try:
+        for attempt in range(_MAX_RETRIES + 1):
+            _rate_limit()
+            with httpx.Client(
+                headers=_HEADERS, follow_redirects=True, timeout=30
+            ) as client:
+                resp = client.get(url, params=params)
+            if resp.status_code == 429 and attempt < _MAX_RETRIES:
+                wait = _BACKOFF_BASE * (2**attempt)
+                logger.warning(
+                    "AO3 returned 429 (attempt %d/%d), retrying in %.1fs",
+                    attempt + 1,
+                    _MAX_RETRIES,
+                    wait,
+                )
+                time.sleep(wait)
+                continue
+            resp.raise_for_status()
+            return BeautifulSoup(resp.text, "html.parser")
+    except httpx.ConnectError as exc:
+        raise AO3Unavailable(f"Cannot connect to AO3: {exc}") from exc
+    except httpx.TimeoutException as exc:
+        raise AO3Unavailable(f"AO3 request timed out: {exc}") from exc
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 404:
+            raise  # let callers handle 404 specifically
+        raise AO3Unavailable(
+            f"AO3 returned HTTP {exc.response.status_code}"
+        ) from exc
+    # Unreachable, but keeps type checkers happy
+    msg = "Exceeded max retries"
+    raise AO3Unavailable(msg)
 
 
 # ---------------------------------------------------------------------------
@@ -269,6 +314,7 @@ def search_works(
         "hits": "hits",
         "date_posted": "created_at",
         "date_updated": "revised_at",
+        "bookmarks": "bookmarks_count",
     }
     params: dict[str, str] = {
         "work_search[query]": query,
@@ -300,7 +346,7 @@ def get_work(work_id: int) -> WorkDetail | None:
             {"view_adult": "true", "view_full_work": "true"},
         )
     except httpx.HTTPStatusError:
-        return None
+        return None  # 404 from AO3 — work not found
 
     title_tag = soup.find("h2", class_="title")
     title = _text(title_tag)

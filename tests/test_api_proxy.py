@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import re
 
+import pytest
 from fastapi.testclient import TestClient
 
 # =========================================================================
@@ -447,3 +448,99 @@ def test_work_stats_not_found(client: TestClient) -> None:
     resp = client.get("/works/99999/stats")
     assert resp.status_code == 404
     assert resp.json()["detail"] == "Work not found"
+
+
+# =========================================================================
+# TC-12 supplement: PATCH sets published_at and ao3_work_id correctly
+# =========================================================================
+
+
+def test_patch_queue_sets_published_fields(client: TestClient) -> None:
+    """PATCH /queue/{id} sets status, published_at, and ao3_work_id."""
+    create_resp = client.post(
+        "/works",
+        json={
+            "title": "Patch Test",
+            "fandom": "Test",
+            "body": "text",
+        },
+    )
+    assert create_resp.status_code == 201
+    queue_id = create_resp.json()["queue_id"]
+
+    patch_resp = client.patch(f"/queue/{queue_id}", json={"ao3_work_id": 54321})
+    assert patch_resp.status_code == 200
+    patched = patch_resp.json()
+    assert patched["status"] == "published"
+    assert patched["ao3_work_id"] == 54321
+    assert patched["published_at"] is not None
+
+    # Verify persisted — re-read should match
+    get_resp = client.get(f"/queue/{queue_id}")
+    assert get_resp.status_code == 200
+    persisted = get_resp.json()
+    assert persisted["status"] == "published"
+    assert persisted["ao3_work_id"] == 54321
+    assert persisted["published_at"] == patched["published_at"]
+
+
+# =========================================================================
+# TC-17 supplement: PATCH with missing ao3_work_id returns 422
+# =========================================================================
+
+
+def test_patch_queue_missing_ao3_work_id(client: TestClient) -> None:
+    """PATCH /queue/{id} with empty body returns 422."""
+    create_resp = client.post(
+        "/works",
+        json={
+            "title": "Validation Test",
+            "fandom": "Test",
+            "body": "text",
+        },
+    )
+    queue_id = create_resp.json()["queue_id"]
+
+    patch_resp = client.patch(f"/queue/{queue_id}", json={})
+    assert patch_resp.status_code == 422
+
+
+# =========================================================================
+# Configurable cache TTL: verify env var is read
+# =========================================================================
+
+
+def test_cache_ttl_configurable(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Cache TTLs can be overridden via environment variables."""
+    monkeypatch.setenv("AO3_TTL_METADATA", "3600")
+    monkeypatch.setenv("AO3_TTL_STATS", "7200")
+
+    import importlib
+
+    import api.ao3_client
+
+    importlib.reload(api.ao3_client)
+
+    assert api.ao3_client._TTL_METADATA == 3600
+    assert api.ao3_client._TTL_STATS == 7200
+
+    # Restore defaults
+    monkeypatch.delenv("AO3_TTL_METADATA")
+    monkeypatch.delenv("AO3_TTL_STATS")
+    importlib.reload(api.ao3_client)
+
+
+# =========================================================================
+# Mock mode consistency: identical JSON across calls (TC-19 extended)
+# =========================================================================
+
+
+def test_mock_list_works_deterministic(client: TestClient) -> None:
+    """list_works returns identical results on repeated calls."""
+    resp1 = client.get(
+        "/fandoms/Harry%20Potter/works", params={"sort": "kudos"}
+    )
+    resp2 = client.get(
+        "/fandoms/Harry%20Potter/works", params={"sort": "kudos"}
+    )
+    assert resp1.json() == resp2.json()

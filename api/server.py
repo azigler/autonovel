@@ -14,6 +14,7 @@ import sys
 from typing import Annotated
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.responses import JSONResponse
 
 from api.models import (
     Comment,
@@ -42,6 +43,21 @@ app = FastAPI(
     description="Local API proxy for AO3 — decouples agent code from AO3 scraping.",
     version="0.1.0",
 )
+
+
+@app.exception_handler(Exception)
+async def _ao3_unavailable_handler(
+    request: object, exc: Exception
+) -> JSONResponse:
+    """Translate AO3Unavailable errors to HTTP 502 Bad Gateway."""
+    from api.ao3_client import AO3Unavailable
+
+    if isinstance(exc, AO3Unavailable):
+        return JSONResponse(
+            status_code=502,
+            content={"detail": f"AO3 unavailable: {exc}"},
+        )
+    raise exc
 
 
 def _client():
