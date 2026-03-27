@@ -54,6 +54,13 @@ def identity_dir(tmp_path, monkeypatch):
         if src.is_file():
             shutil.copy2(src, tmp_path / src.name)
 
+    # Overwrite voice_priors.json with hardcoded defaults so tests are
+    # isolated from calibrated values in the real identity/ directory.
+    default_vp = VoicePriors()
+    (tmp_path / "voice_priors.json").write_text(
+        json.dumps(default_vp.to_dict(), indent=2), encoding="utf-8"
+    )
+
     # Monkeypatch the module-level path constants
     import identity.schema as schema_mod
 
