@@ -1,6 +1,7 @@
 eval_logs/
 edit_logs/
-briefs/
+# Old autonovel revision briefs (generated per-chapter)
+briefs/revision_*
 __pycache__/
 *.pyc
 .env
@@ -8,6 +9,11 @@ __pycache__/
 typeset/*.pdf
 typeset/chapters_content.tex
 *.pdf
+
+# Write loop run state
+write/runs/
+publish_queue/
+api/cache/
 
 # bv (beads viewer) local config and caches
 .bv/
