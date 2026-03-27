@@ -1,0 +1,20 @@
+{
+  "fandom": "Baldur's Gate (Video Games)",
+  "characters": ["Shadowheart (Baldur's Gate)", "Karlach (Baldur's Gate)"],
+  "premise": "Post-Act 3, Shadowheart chose to spare the Nightsong. She's staying at a small temple in the outer districts of Baldur's Gate, helping with reconstruction. Karlach shows up unannounced with food she bought at the market because she heard Shadowheart hasn't been eating properly. What follows is an errand — Shadowheart needs to deliver supplies to a family in the lower city, and Karlach comes along. The walk forces conversation. Shadowheart is relearning how to exist without Shar's structure, and keeps catching herself reaching for prayers that aren't hers anymore. Karlach is trying to figure out how to be useful when nobody needs her to fight. The errand is small but it makes them both confront what 'normal life' actually looks like when you've never had one.",
+  "target_length": 6500,
+  "rating": "General Audiences",
+  "tags_hint": [
+    "Post-Canon",
+    "Character Study",
+    "Gen",
+    "Shadowheart (Baldur's Gate) Has Feelings",
+    "Karlach (Baldur's Gate) Has Feelings",
+    "Found Family",
+    "Healing",
+    "Slice of Life",
+    "Friendship"
+  ],
+  "format": "one_shot",
+  "experiment_hypothesis": "Test whether the voice adapts to a different POV character (Shadowheart) without losing its identity as the same author. Secondary: test sustained interiority at 6.5k words with forward movement (an errand/walk) instead of a static scene. Tertiary: confirm 'He looked at' repetition was Astarion-specific, not a voice tic."
+}

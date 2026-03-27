@@ -107,8 +107,14 @@ STRUCTURAL ANTI-PATTERNS (avoid all of these):
 - DIALOGUE should sound like speech, not prose. Characters stumble, interrupt, trail off.
 - 70%+ of the chapter should be in-scene (moment by moment) rather than summary.
 - Include at least one moment that surprises -- a beat arriving early, late, or sideways.
+- VARY observation verbs. Do not use "He/She looked at" more than 3 times per chapter. Use alternatives or restructure as action.
+- WATCH em-dash density. No more than 8 em-dashes per 1000 words.
 
-Write the FULL chapter. Do not truncate, summarize, or skip ahead."""
+Write the FULL chapter. Do not truncate, summarize, or skip ahead.
+
+OUTPUT RULES:
+- Output ONLY the story prose. No title, no headers, no content warnings, no author's notes, no epigraphs, no italicized summary at the top or bottom.
+- Start with the first sentence of the story. End with the last sentence of the story. Nothing else."""
 
     # --- User prompt: the specific writing task ---
     fandom_context = context.get("fandom_context", "")
