@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autonovel Reader</title>
+    <link rel="stylesheet" href="https://impeccable.style/css/impeccable.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>autonovel</h2>
+            <button type="button" id="theme-toggle" title="Toggle dark/light mode">&#9789;</button>
+        </div>
+
+        {% for section, items in sidebar.items() %}
+        <div class="sidebar-section">
+            <h3 class="section-title">{{ section }}</h3>
+            {% if section == "WRITING" %}
+                {% if items.briefs %}
+                <div class="subsection">
+                    <span class="subsection-title">briefs/</span>
+                    {% for item in items.briefs %}
+                    <a href="#" class="nav-item" data-path="{{ item.path }}">{{ item.name }}</a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if items.runs %}
+                <div class="subsection">
+                    <span class="subsection-title">runs/</span>
+                    {% for item in items.runs %}
+                    <a href="#" class="nav-item run-item" data-path="{{ item.path }}">
+                        <span class="run-name">{{ item.name }}</span>
+                        {% if item.state is defined %}
+                        <span class="badge badge-{{ item.state | default('unknown') }}">{{ item.state | default('?') }}</span>
+                        {% endif %}
+                        {% if item.words is defined and item.words %}
+                        <span class="word-count">{{ item.words }}w</span>
+                        {% endif %}
+                        {% if item.slop is defined and item.slop is not none %}
+                        <span class="slop-score">slop:{{ item.slop }}</span>
+                        {% endif %}
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="subsection">
+                    <span class="subsection-title">runs/</span>
+                    <span class="nav-item muted">no runs yet</span>
+                </div>
+                {% endif %}
+            {% elif section == "BEADS" %}
+                <div class="beads-content" id="beads-content">
+                    <span class="nav-item muted">loading...</span>
+                </div>
+            {% else %}
+                {% for item in items %}
+                <a href="#" class="nav-item" data-path="{{ item.path }}">{{ item.name }}</a>
+                {% endfor %}
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <div class="sidebar-section">
+            <h3 class="section-title">BEADS</h3>
+            <div class="beads-content" id="beads-content">
+                <span class="nav-item muted">loading...</span>
+            </div>
+        </div>
+    </aside>
+
+    <main class="content" id="content">
+        <div class="welcome">
+            <h1>Autonovel Reader</h1>
+            <p>Browse the project. Click any file in the sidebar to view it.</p>
+        </div>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

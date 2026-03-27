@@ -1,0 +1,12 @@
+[Unit]
+Description=Autonovel Project Reader
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/ubuntu/autonovel
+ExecStart=/home/ubuntu/.local/bin/uv run python -m reader
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

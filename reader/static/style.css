@@ -1,0 +1,461 @@
+/* === Layout === */
+:root {
+  --sidebar-width: 280px;
+  --bg: #fafafa;
+  --bg-sidebar: #f0f0f0;
+  --text: #1a1a1a;
+  --text-muted: #666;
+  --border: #ddd;
+  --accent: #2563eb;
+  --accent-light: #dbeafe;
+  --code-bg: #f5f5f5;
+  --json-key: #881391;
+  --json-string: #1a7f37;
+  --json-number: #0550ae;
+  --json-bool: #cf222e;
+  --json-null: #666;
+  --badge-open: #dbeafe;
+  --badge-open-text: #1e40af;
+  --badge-closed: #dcfce7;
+  --badge-closed-text: #166534;
+  --badge-in-progress: #fef3c7;
+  --badge-in-progress-text: #92400e;
+  --badge-draft: #e5e7eb;
+  --badge-draft-text: #374151;
+  --badge-complete: #dcfce7;
+  --badge-complete-text: #166534;
+  --badge-error: #fee2e2;
+  --badge-error-text: #991b1b;
+  --badge-unknown: #e5e7eb;
+  --badge-unknown-text: #374151;
+}
+
+[data-theme="dark"] {
+  --bg: #1a1a2e;
+  --bg-sidebar: #16213e;
+  --text: #e0e0e0;
+  --text-muted: #999;
+  --border: #333;
+  --accent: #60a5fa;
+  --accent-light: #1e3a5f;
+  --code-bg: #0d1117;
+  --json-key: #d2a8ff;
+  --json-string: #7ee787;
+  --json-number: #79c0ff;
+  --json-bool: #ff7b72;
+  --json-null: #8b949e;
+  --badge-open: #1e3a5f;
+  --badge-open-text: #93c5fd;
+  --badge-closed: #064e3b;
+  --badge-closed-text: #6ee7b7;
+  --badge-in-progress: #451a03;
+  --badge-in-progress-text: #fcd34d;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Georgia, "Times New Roman", serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  min-height: 100vh;
+}
+
+/* === Sidebar === */
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  padding: 1rem;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  overflow-y: auto;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.85rem;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-header h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+#theme-toggle {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.sidebar-section {
+  margin-bottom: 1.25rem;
+}
+
+.section-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+
+.subsection {
+  margin-left: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.subsection-title {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 0.2rem;
+}
+
+.nav-item {
+  display: block;
+  padding: 0.2rem 0.5rem;
+  margin-left: 0.5rem;
+  color: var(--text);
+  text-decoration: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-item:hover {
+  background: var(--accent-light);
+}
+
+.nav-item.active {
+  background: var(--accent-light);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.nav-item.muted {
+  color: var(--text-muted);
+  font-style: italic;
+  cursor: default;
+}
+
+.run-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.run-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* === Badges === */
+.badge {
+  font-size: 0.65rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-weight: 600;
+  text-transform: lowercase;
+}
+
+.badge-open {
+  background: var(--badge-open);
+  color: var(--badge-open-text);
+}
+.badge-closed {
+  background: var(--badge-closed);
+  color: var(--badge-closed-text);
+}
+.badge-in_progress,
+.badge-in-progress {
+  background: var(--badge-in-progress);
+  color: var(--badge-in-progress-text);
+}
+.badge-draft {
+  background: var(--badge-draft);
+  color: var(--badge-draft-text);
+}
+.badge-complete {
+  background: var(--badge-complete);
+  color: var(--badge-complete-text);
+}
+.badge-error {
+  background: var(--badge-error);
+  color: var(--badge-error-text);
+}
+.badge-unknown {
+  background: var(--badge-unknown);
+  color: var(--badge-unknown-text);
+}
+
+.word-count,
+.slop-score {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+/* === Content Area === */
+.content {
+  margin-left: var(--sidebar-width);
+  flex: 1;
+  padding: 2rem 3rem;
+  max-width: calc(var(--sidebar-width) + 75ch);
+  line-height: 1.7;
+}
+
+.welcome {
+  padding-top: 4rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.welcome h1 {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+  color: var(--text);
+}
+
+.file-path {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+
+.file-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+/* === Rendered Markdown === */
+.md-content h1 {
+  font-size: 1.6rem;
+  margin: 1.5rem 0 0.75rem;
+}
+.md-content h2 {
+  font-size: 1.3rem;
+  margin: 1.25rem 0 0.5rem;
+}
+.md-content h3 {
+  font-size: 1.1rem;
+  margin: 1rem 0 0.5rem;
+}
+.md-content p {
+  margin-bottom: 0.75rem;
+}
+.md-content ul,
+.md-content ol {
+  margin: 0.5rem 0 0.75rem 1.5rem;
+}
+.md-content li {
+  margin-bottom: 0.25rem;
+}
+.md-content blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 1rem;
+  margin: 0.75rem 0;
+  color: var(--text-muted);
+}
+.md-content code {
+  font-family: "SF Mono", "Fira Code", monospace;
+  background: var(--code-bg);
+  padding: 0.15rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+.md-content pre {
+  background: var(--code-bg);
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+}
+.md-content pre code {
+  background: none;
+  padding: 0;
+}
+.md-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.75rem 0;
+}
+.md-content th,
+.md-content td {
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.75rem;
+  text-align: left;
+}
+.md-content th {
+  background: var(--code-bg);
+  font-weight: 600;
+}
+
+/* === JSON Display === */
+.json-content {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.85rem;
+  background: var(--code-bg);
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  white-space: pre;
+  line-height: 1.5;
+}
+
+.json-key {
+  color: var(--json-key);
+}
+.json-string {
+  color: var(--json-string);
+}
+.json-number {
+  color: var(--json-number);
+}
+.json-bool {
+  color: var(--json-bool);
+}
+.json-null {
+  color: var(--json-null);
+  font-style: italic;
+}
+
+/* === Code/Text Display === */
+.text-content {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.85rem;
+  background: var(--code-bg);
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+/* === Run Summary === */
+.run-summary {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.run-summary h3 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.run-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+}
+
+.run-stat {
+  text-align: center;
+}
+
+.run-stat .label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.run-stat .value {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+/* === Directory listing === */
+.file-list {
+  list-style: none;
+  padding: 0;
+}
+
+.file-list li {
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.file-list a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.file-list a:hover {
+  text-decoration: underline;
+}
+
+.file-size {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-left: 0.5rem;
+}
+
+/* === Beads === */
+.beads-output {
+  font-family: monospace;
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+  line-height: 1.4;
+}
+
+.bead-line {
+  padding: 0.15rem 0.3rem;
+  border-radius: 3px;
+  margin-bottom: 0.1rem;
+}
+
+/* === Loading === */
+.loading {
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 2rem;
+  text-align: center;
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    position: relative;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .content {
+    margin-left: 0;
+    padding: 1rem;
+  }
+}
