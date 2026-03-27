@@ -15,6 +15,7 @@ from identity.schema import (
     load_identity,
     update_self,
     update_voice_priors,
+    validate_voice_priors,
 )
 
 __all__ = [
@@ -28,4 +29,5 @@ __all__ = [
     "load_identity",
     "update_self",
     "update_voice_priors",
+    "validate_voice_priors",
 ]
