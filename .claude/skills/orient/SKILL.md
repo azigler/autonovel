@@ -23,13 +23,16 @@ proceed to Step 2 until all have been read and absorbed.
 3. **`.claude/refs/PLAN.md`** -- the project plan covering the core loop
    (identity, writing, publishing, feedback, learning), milestones (M0-M6),
    one-way doors, and architecture. This is the roadmap.
-4. **`MEMORY.md`** -- user preferences, operational lessons, feedback from
+4. **`.claude/refs/methodology.md`** -- the two-loop methodology (engineering
+   loop vs creative loop). Defines how experiment beads, calibration beads,
+   and feedback beads work. Required reading for classifying work correctly.
+5. **`MEMORY.md`** -- user preferences, operational lessons, feedback from
    prior sessions. Failing to read this causes repeated mistakes.
-5. **Every skill file** in `.claude/skills/*/SKILL.md` -- read each one fully.
+6. **Every skill file** in `.claude/skills/*/SKILL.md` -- read each one fully.
    These define the workflows, conventions, and guardrails for all operations
    (commit format, linting policy, bead tracking, branching, TDD, spec
-   writing, orchestration, etc.). Skipping a skill means missing best
-   practices that apply to the current session.
+   writing, orchestration, creative loop, etc.). Skipping a skill means
+   missing best practices that apply to the current session.
 
 ## Step 2: Discover Live State
 
@@ -45,6 +48,7 @@ From this, determine:
 - **Version**: latest tag (e.g., v0.2.3)
 - **Active branch**: any version branch means work in flight
 - **Open beads**: any in-progress beads mean interrupted work
+- **Experiment beads**: any experiment/calibration beads indicate creative loop state
 - **Dirty files**: uncommitted changes need attention first
 
 ## Step 3: Find Current Position
@@ -58,7 +62,12 @@ Check off completed items against git history and live state.
 
 ## Step 4: Classify Work by Skill Domain
 
-Every task falls into exactly one domain. The pipeline is strictly ordered:
+This project has two loop types (see `.claude/refs/methodology.md`). Determine
+which loop the current work belongs to before routing.
+
+### Engineering Loop
+
+Builds the harness. Beads are deterministic with greppable acceptance criteria.
 
 ```
 spec -> review -> test -> impl -> eval -> housekeeping -> release
@@ -81,6 +90,34 @@ spec -> review -> test -> impl -> eval -> housekeeping -> release
 - Agent output quality needs verification after prompt or logic changes
 - Prompt changes were made and need validation before release
 
+### Creative Loop
+
+Develops the author. Beads are experimental with hypotheses and results.
+
+```
+conceive -> write -> evaluate -> publish -> feedback -> learn
+    ^                                                    |
+    +----------------------------------------------------+
+```
+
+| Domain | Skill | When |
+|--------|-------|------|
+| **Conceive** | `/conceive` | Generating a story idea, creating experiment beads |
+| **Write** | `/write` | Drafting, evaluating, revising a story from a brief |
+| **Feedback** | `/feedback` | Collecting AO3 metrics and parsing reader comments |
+| **Learn** | `/learn` | Processing feedback into identity updates, closing experiments |
+
+**Pre-launch (calibration):** The loop is `conceive -> write -> evaluate -> learn`
+(no publish/feedback). Calibration beads develop the voice before going live.
+
+**Post-launch:** The full loop runs including publish and feedback stages.
+
+**Route to creative loop when:**
+- Open experiment or calibration beads need advancing
+- Voice calibration is in progress
+- Reader feedback has arrived and needs processing
+- The agent's identity files need updating from results
+
 ## Step 5: Check Blockers
 
 Before routing, verify:
@@ -88,8 +125,10 @@ Before routing, verify:
 1. **Open P1 questions** affecting target work? -> Route to `/review` first
 2. **Prior branch not merged?** -> Can't start dependent work
 3. **Pending human feedback?** -> Route to `/eval harvest` to capture it first
-4. **Dirty git state?** -> Clean up first
-5. **Beads from interrupted session?** -> Assess whether to resume or close
+4. **Pending reader feedback?** -> Route to `/feedback` then `/learn`
+5. **Calibration in progress?** -> Continue creative loop before starting new engineering work
+6. **Dirty git state?** -> Clean up first
+7. **Beads from interrupted session?** -> Assess whether to resume or close (check experiment beads too)
 
 If blockers exist, present them and ask the user before proceeding.
 
@@ -104,7 +143,9 @@ Show the user:
 **Position**: [description of where we are in the plan]
 **Active plan**: [plan file path, if any]
 **Phase**: [which phase is current]
-**Skill domain**: [spec / review / test / impl / eval / housekeeping / release]
+**Loop**: [engineering / creative]
+**Skill domain**: [spec / review / test / impl / eval / housekeeping / release / conceive / write / feedback / learn]
+**Calibration status**: [not started / in progress / complete]
 **Blockers**: [none / list]
 
 **Recommended action**: [what to do next]

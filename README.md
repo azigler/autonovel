@@ -18,34 +18,49 @@ the agentic layer adds identity, publishing, feedback, and learning.
 
 ## Architecture
 
-The agent runs a continuous loop:
+The agent runs two parallel loops (see `.claude/refs/methodology.md`):
 
+**Engineering loop** -- builds the harness:
 ```
-identity --> write --> publish --> feedback --> learn
-    ^                                           |
-    +-------------------------------------------+
+/spec --> /review --> /test --> /impl --> /release
+```
+
+**Creative loop** -- develops the author:
+```
+/conceive --> /write --> /evaluate --> /publish --> /feedback --> /learn
+```
+
+The creative loop drives engineering priorities: when writing hits a limitation,
+that becomes an engineering bead.
+
+Pre-launch, the creative loop runs in calibration mode (no publish/feedback):
+```
+/conceive --> /write --> /evaluate --> /learn
 ```
 
 1. **Identity** (`identity/`) -- The agent's creative self. A `self.md` document
    that evolves after each feedback cycle, quantified voice priors, pen name,
    and literary inspirations.
 
-2. **Write** (`write/`) -- A state machine that takes a story brief from idea to
+2. **Conceive** -- Generate story ideas balancing exploitation vs exploration.
+   Each idea becomes an experiment bead with a hypothesis. Output: `briefs/*.json`.
+
+3. **Write** (`write/`) -- A state machine that takes a story brief from idea to
    publication-ready draft. States: BRIEF, CONTEXT, DRAFT, EVALUATE, REVISE,
    PREPARE, QUEUE, DONE. Uses the autonovel engine for drafting and evaluation,
    with anti-slop and anti-pattern detection to avoid AI tells.
 
-3. **Publish** -- The write loop prepares AO3-formatted output (tags, summary,
+4. **Publish** -- The write loop prepares AO3-formatted output (tags, summary,
    author's notes) and queues it for human review. A human posts manually --
    AO3 TOS prohibits automated posting, and human review is a quality gate.
 
-4. **Feedback** -- Metrics collection from AO3: kudos, bookmarks, hits,
-   subscriptions, comments. The API proxy (`api/`) provides a local REST
-   interface that decouples agent code from AO3 scraping.
+5. **Feedback** -- Metrics collection from AO3: kudos, bookmarks, hits,
+   subscriptions, comments. Comment parsing extracts what resonated and what
+   fell flat.
 
-5. **Learn** -- The agent updates its identity based on what readers responded to.
+6. **Learn** -- The agent updates its identity based on what readers responded to.
    Prompt evolution, few-shot bank curation, evaluation weight adjustment, and
-   self-reflection entries in `self.md`.
+   self-reflection entries in `self.md`. Closes experiment beads with results.
 
 ---
 
@@ -87,6 +102,9 @@ Three specs serve as the authoritative technical documentation:
 | [specs/write-loop.md](specs/write-loop.md) | Write loop state machine: states, transitions, evaluation gates, revision cycles |
 | [specs/api-proxy.md](specs/api-proxy.md) | AO3 API proxy: endpoints, publish queue, mock mode, metrics collection |
 
+For the two-loop methodology (engineering vs creative), see
+[.claude/refs/methodology.md](.claude/refs/methodology.md).
+
 For the underlying writing engine, see [PIPELINE.md](PIPELINE.md) and
 [WORKFLOW.md](WORKFLOW.md).
 
@@ -105,6 +123,12 @@ uv run python -m api.server --mock
 
 # Start in real mode (requires AO3 credentials in .env)
 uv run python -m api.server
+
+# Creative loop (the core workflow):
+# /conceive  -- generate a story idea and brief
+# /write     -- draft, evaluate, revise from the brief
+# /feedback  -- collect reader metrics after publishing
+# /learn     -- update identity from what readers responded to
 
 # Run the write loop (programmatic -- see write/loop.py)
 # Create a StoryBrief, then call write.loop.run(brief)
