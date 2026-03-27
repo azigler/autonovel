@@ -1,0 +1,19 @@
+{
+  "sentence_length": { "mean": 14, "std": 8, "min": 3, "max": 45 },
+  "paragraph_length": { "mean": 4, "std": 2 },
+  "dialogue_ratio": 0.35,
+  "interiority_depth": "medium",
+  "metaphor_density": "sparse",
+  "pov": "third_limited",
+  "tense": "past",
+  "vocabulary_register": "literary_accessible",
+  "humor_frequency": "occasional",
+  "sensory_detail_density": "high",
+  "emotional_directness": "indirect",
+  "pacing_preference": "slow_burn",
+  "chapter_length_target": { "min": 3000, "max": 6000 },
+  "strengths": [],
+  "weaknesses": [],
+  "updated_at": null,
+  "version": 1
+}
