@@ -1,0 +1,124 @@
+---
+description: Session entrypoint -- discover state, classify work, route to sub-skill
+---
+
+# Orient
+
+Entry point for every session. Discovers current state dynamically, classifies
+remaining work by skill domain, and routes to the appropriate sub-skill.
+
+**No hardcoded references.** Everything is discovered fresh from live state.
+
+## Step 1: Read Foundation
+
+Read **every** item below before taking any action. Do not skip any, and do not
+proceed to Step 2 until all have been read and absorbed.
+
+1. **`CLAUDE.md`** (root) -- project definition, file layout, conventions, tech
+   stack, architecture decisions. This is the single source of truth for how
+   the project works.
+2. **`~/.claude/CLAUDE.md`** (global) -- user's private global instructions.
+   These override defaults and contain delegation patterns, bead lifecycle,
+   and worktree protocols.
+3. **`MEMORY.md`** -- user preferences, operational lessons, feedback from
+   prior sessions. Failing to read this causes repeated mistakes.
+4. **Every skill file** in `.claude/skills/*/SKILL.md` -- read each one fully.
+   These define the workflows, conventions, and guardrails for all operations
+   (commit format, linting policy, bead tracking, branching, TDD, spec
+   writing, orchestration, etc.). Skipping a skill means missing best
+   practices that apply to the current session.
+
+## Step 2: Discover Live State
+
+```bash
+git tag --sort=-v:refname | head -5         # current version
+git log --oneline -5                        # recent work
+git branch -a | grep -v worktree            # active branches
+br list                                     # open beads
+git status --short                          # dirty files
+```
+
+From this, determine:
+- **Version**: latest tag (e.g., v0.2.3)
+- **Active branch**: any version branch means work in flight
+- **Open beads**: any in-progress beads mean interrupted work
+- **Dirty files**: uncommitted changes need attention first
+
+## Step 3: Find Current Position
+
+Locate the project's roadmap or plan files. Common locations:
+- `docs/ROADMAP.md` or `refs/plans/` or `TODO.md`
+- Design decision docs or ADRs
+
+Walk the plan steps. Find the first incomplete item -- that's where we are.
+If there are active plan files, read them for phase breakdown and specific tasks.
+
+## Step 4: Classify Work by Skill Domain
+
+Every task falls into exactly one domain. The pipeline is strictly ordered:
+
+```
+spec -> review -> test -> impl -> eval -> housekeeping -> release
+        ^                                                    |
+        +------- (new OQs discovered) ----------------------+
+```
+
+| Domain | Skill | When |
+|--------|-------|------|
+| **Spec** | `/spec` | Writing or amending a specification |
+| **Review** | `/review` | Deciding open questions, resolving conflicts |
+| **Test** | `/test` | Writing tests before implementation (TDD) |
+| **Impl** | `/impl` | Building code until tests pass |
+| **Eval** | `/eval` | Evaluating agent quality, harvesting feedback, running experiments |
+| **Housekeeping** | `/housekeeping` | Deletions, deprecation markers, doc updates, AD rewrites |
+| **Release** | `/release` | Merge branch to main, tag, GitHub release (uses `/branch` internally) |
+
+**Route to `/eval` when:**
+- Human left annotations on Phoenix traces that need harvesting
+- Agent output quality needs verification after prompt or logic changes
+- Prompt changes were made and need validation before release
+
+## Step 5: Check Blockers
+
+Before routing, verify:
+
+1. **Open P1 questions** affecting target work? -> Route to `/review` first
+2. **Prior branch not merged?** -> Can't start dependent work
+3. **Pending human feedback?** -> Route to `/eval harvest` to capture it first
+4. **Dirty git state?** -> Clean up first
+5. **Beads from interrupted session?** -> Assess whether to resume or close
+
+If blockers exist, present them and ask the user before proceeding.
+
+## Step 6: Present and Route
+
+Show the user:
+
+```
+## Orientation Report
+
+**Version**: vN.M.R
+**Position**: [description of where we are in the plan]
+**Active plan**: [plan file path, if any]
+**Phase**: [which phase is current]
+**Skill domain**: [spec / review / test / impl / eval / housekeeping / release]
+**Blockers**: [none / list]
+
+**Recommended action**: [what to do next]
+```
+
+Then invoke the appropriate skill.
+
+## Post-Compaction Recovery
+
+If you're resuming after context compaction:
+
+1. **Do NOT immediately create branches or beads.** Orient first.
+2. **Read the active plan file** if one exists. It has the phase breakdown.
+3. **Check what's already done** by comparing the plan against git history and
+   live state. Don't redo completed work.
+4. **Present your findings** before taking any action. The user may have context
+   you don't.
+
+The most common post-compaction mistake is jumping straight to `/impl` when the
+current phase actually needs `/spec` or `/review`. Always classify the work first.

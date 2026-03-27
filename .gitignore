@@ -8,3 +8,6 @@ __pycache__/
 typeset/*.pdf
 typeset/chapters_content.tex
 *.pdf
+
+# bv (beads viewer) local config and caches
+.bv/
