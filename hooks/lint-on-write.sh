@@ -9,19 +9,6 @@ FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
 [ ! -f "$FILE_PATH" ] && exit 0
 
 case "$FILE_PATH" in
-  *.js|*.ts|*.jsx|*.tsx|*.json|*.css)
-    command -v biome &>/dev/null || exit 0
-    # Run biome from the file's git root to find the correct biome.json
-    FILE_DIR=$(dirname "$FILE_PATH")
-    PROJECT_ROOT=$(cd "$FILE_DIR" && git rev-parse --show-toplevel 2>/dev/null)
-    [ -z "$PROJECT_ROOT" ] && exit 0
-    OUTPUT=$(cd "$PROJECT_ROOT" && biome check --write --error-on-warnings "$FILE_PATH" 2>&1) || {
-      # Ignore "no files processed" (biome includes pattern mismatch) — not an error
-      echo "$OUTPUT" | grep -q "No files were processed" && exit 0
-      echo "$OUTPUT" >&2
-      exit 2
-    }
-    ;;
   *.py)
     command -v ruff &>/dev/null || exit 0
     ruff check --fix "$FILE_PATH" 2>/dev/null
@@ -30,30 +17,6 @@ case "$FILE_PATH" in
       echo "$OUTPUT" >&2
       exit 2
     }
-    ;;
-  *.rs)
-    command -v rustfmt &>/dev/null || exit 0
-    rustfmt "$FILE_PATH" 2>/dev/null
-    if command -v cargo &>/dev/null; then
-      OUTPUT=$(cargo clippy -- -W clippy::pedantic -D warnings 2>&1) || {
-        echo "$OUTPUT" >&2
-        exit 2
-      }
-    fi
-    ;;
-  *.go)
-    command -v gofmt &>/dev/null || exit 0
-    gofmt -w "$FILE_PATH" 2>/dev/null
-    if command -v golangci-lint &>/dev/null; then
-      GOLANGCI_CFG=""
-      for cfg in .golangci.yml .golangci.yaml configs/.golangci.yml "$HOME/.config/golangci-lint/.golangci.yml"; do
-        [ -f "$cfg" ] && GOLANGCI_CFG="--config $cfg" && break
-      done
-      OUTPUT=$(golangci-lint run $GOLANGCI_CFG "$FILE_PATH" 2>&1) || {
-        echo "$OUTPUT" >&2
-        exit 2
-      }
-    fi
     ;;
 esac
 

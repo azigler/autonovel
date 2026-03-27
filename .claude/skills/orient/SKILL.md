@@ -14,15 +14,18 @@ remaining work by skill domain, and routes to the appropriate sub-skill.
 Read **every** item below before taking any action. Do not skip any, and do not
 proceed to Step 2 until all have been read and absorbed.
 
-1. **`CLAUDE.md`** (root) -- project definition, file layout, conventions, tech
-   stack, architecture decisions. This is the single source of truth for how
-   the project works.
+1. **`CLAUDE.md`** (root) -- project definition for autonovel (autonomous
+   fanfiction author agent). Covers directory layout, tech stack (Python/uv,
+   Claude API, AO3), anti-AI-detection priorities, and development conventions.
 2. **`~/.claude/CLAUDE.md`** (global) -- user's private global instructions.
    These override defaults and contain delegation patterns, bead lifecycle,
    and worktree protocols.
-3. **`MEMORY.md`** -- user preferences, operational lessons, feedback from
+3. **`.claude/refs/PLAN.md`** -- the project plan covering the core loop
+   (identity, writing, publishing, feedback, learning), milestones (M0-M6),
+   one-way doors, and architecture. This is the roadmap.
+4. **`MEMORY.md`** -- user preferences, operational lessons, feedback from
    prior sessions. Failing to read this causes repeated mistakes.
-4. **Every skill file** in `.claude/skills/*/SKILL.md` -- read each one fully.
+5. **Every skill file** in `.claude/skills/*/SKILL.md` -- read each one fully.
    These define the workflows, conventions, and guardrails for all operations
    (commit format, linting policy, bead tracking, branching, TDD, spec
    writing, orchestration, etc.). Skipping a skill means missing best
@@ -46,12 +49,12 @@ From this, determine:
 
 ## Step 3: Find Current Position
 
-Locate the project's roadmap or plan files. Common locations:
-- `docs/ROADMAP.md` or `refs/plans/` or `TODO.md`
-- Design decision docs or ADRs
+Locate the project plan. For autonovel:
+- `.claude/refs/PLAN.md` -- milestones M0-M6, architecture, one-way doors
+- `CLAUDE.md` -- directory layout and constraints
 
-Walk the plan steps. Find the first incomplete item -- that's where we are.
-If there are active plan files, read them for phase breakdown and specific tasks.
+Walk the plan milestones. Find the first incomplete item -- that's where we are.
+Check off completed items against git history and live state.
 
 ## Step 4: Classify Work by Skill Domain
 

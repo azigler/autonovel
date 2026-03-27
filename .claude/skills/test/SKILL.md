@@ -35,13 +35,13 @@ exclusively test files.
 The tests will fail until implementation lands -- that is expected and correct.
 The impl agent's job is to make the tests pass without modifying them.
 
-```typescript
-// CORRECT -- import from the real path (module doesn't exist yet, that's fine)
-import { loadAgentConfig } from "../loader.js";
-import type { AgentConfig } from "../types.js";
+```python
+# CORRECT -- import from the real path (module doesn't exist yet, that's fine)
+from identity.voice_priors import load_voice_priors
+from identity.types import VoicePrior
 
-// WRONG -- do NOT write inline stubs, mocks, or placeholder implementations
-const loadAgentConfig = () => { throw new Error("not implemented"); };
+# WRONG -- do NOT write inline stubs, mocks, or placeholder implementations
+def load_voice_priors(): raise NotImplementedError
 ```
 
 Why: If you write stubs, the impl agent will rewrite your test file to replace
@@ -50,14 +50,11 @@ The tests define the contract; the implementation must match the tests.
 
 ### When to use skip markers
 
-Use `test.skip()` or `test.todo()` ONLY for tests that genuinely cannot run even
-after implementation lands (e.g., needs a running server, external service, or
+Use `pytest.mark.skip` ONLY for tests that genuinely cannot run even after
+implementation lands (e.g., needs a running server, external service, or
 integration environment):
 
-- **Rust**: `#[ignore = "needs running server"]`
-- **TypeScript/JS**: `test.skip("needs Next.js runtime", () => { ... })`
 - **Python**: `@pytest.mark.skip(reason="needs running server")`
-- **Go**: `t.Skip("needs running server")`
 
 Do NOT skip tests just because the implementation doesn't exist yet. Write them
 as active tests with real imports -- they will fail now and pass after impl.
@@ -84,7 +81,7 @@ Convert each to a test. The test should:
 ## Step 3: Add Edge Cases and Error Tests
 
 For every spec test case, consider:
-- **Boundary values**: empty collections, zero, MAX_INT, nil/null/undefined
+- **Boundary values**: empty collections, zero, `sys.maxsize`, `None`
 - **Error paths**: what happens on invalid input? Does it throw or return error?
 - **Concurrency** (if applicable): what if two operations run simultaneously?
 - **Persistence** (if applicable): does this survive save/restore?
@@ -95,49 +92,55 @@ Add at minimum 5 additional tests beyond what the spec provides.
 
 ### Naming Conventions
 
-These conventions apply regardless of implementation language:
+pytest conventions:
 
-- Test function: `snake_case` matching the spec test name (or `camelCase` per language convention)
+- Test file: `test_<module>.py` in the `tests/` directory
+- Test function: `test_<snake_case>` matching the spec test name
 - Spec tests: direct from spec, no prefix
 - Edge cases: prefix function name with `edge_`
 - Error paths: prefix function name with `error_`
 - Integration: prefix function name with `integration_`
-- Doc comment: always include `TEST:` or `EDGE:` or `ERROR:` label
+- Docstring: always include `TEST:` or `EDGE:` or `ERROR:` label
 
-### Test Structure Example (language-agnostic pattern)
+### Test Structure Example (pytest)
 
-```
-// Spec Test Cases
-// Each maps 1:1 to a spec Section 5 test case
+```python
+# Spec Test Cases
+# Each maps 1:1 to a spec Section 5 test case
 
-/// TEST: basic-create (Spec NN, Test Case 01)
-/// Verifies that creating an entity returns expected fields.
-test basic_create() {
-    // setup
-    // execute
-    // assert
-}
 
-// Edge Case Tests
-// Additional coverage beyond the spec
+def test_basic_create():
+    """TEST: basic-create (Spec NN, Test Case 01)
+    Verifies that creating an entity returns expected fields.
+    """
+    # setup
+    # execute
+    # assert
 
-/// EDGE: empty-input
-/// Tests behavior when input is empty/null.
-test edge_empty_input() {
-    // setup
-    // execute
-    // assert
-}
 
-// Error Path Tests
+# Edge Case Tests
+# Additional coverage beyond the spec
 
-/// ERROR: invalid-id
-/// Tests that invalid IDs produce a clear error, not a crash.
-test error_invalid_id() {
-    // setup
-    // execute
-    // assert error
-}
+
+def test_edge_empty_input():
+    """EDGE: empty-input
+    Tests behavior when input is empty/None.
+    """
+    # setup
+    # execute
+    # assert
+
+
+# Error Path Tests
+
+
+def test_error_invalid_id():
+    """ERROR: invalid-id
+    Tests that invalid IDs produce a clear error, not a crash.
+    """
+    # setup
+    # execute
+    # assert raises
 ```
 
 ### Handling Unimplemented Dependencies
@@ -149,11 +152,8 @@ Only use skip markers for tests that need **external infrastructure** (running
 servers, cloud services, integration environments) that won't exist even after
 the module is implemented:
 
-```
-# Rust:    #[ignore = "needs running database"]
-# JS/TS:  test.skip("needs Next.js runtime", () => { ... })
-# Python:  @pytest.mark.skip(reason="needs running Redis")
-# Go:      t.Skip("needs running database")
+```python
+@pytest.mark.skip(reason="needs running Redis")
 ```
 
 Do NOT skip tests just because the imported module doesn't exist yet.
@@ -164,10 +164,10 @@ Before committing, verify:
 
 - [ ] Every spec test case (Section 5) has a corresponding test
 - [ ] At least 5 additional edge-case/error tests beyond the spec
-- [ ] Each test has a doc comment with TEST/EDGE/ERROR label and spec reference
+- [ ] Each test has a docstring with TEST/EDGE/ERROR label and spec reference
 - [ ] Tests parse as valid syntax (imports from real module paths, even if modules don't exist yet)
 - [ ] No inline stubs or placeholder implementations -- only real imports
-- [ ] Naming follows conventions (prefixes, language-appropriate case)
+- [ ] Naming follows pytest conventions (`test_` prefix, `test_edge_`, `test_error_`)
 - [ ] Integration tests are separated from unit tests
 - [ ] **NO implementation source files were created or modified**
 
