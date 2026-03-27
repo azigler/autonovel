@@ -75,11 +75,71 @@ def draft_chapter(
     total_chapters: int = 1,
     previous_chapter_tail: str = "",
 ) -> str:
-    """Draft a chapter (patchable entry point -- stub).
+    """Draft a chapter using the Claude API.
 
-    Will be replaced with real Claude API call.
+    Builds a system prompt from the identity voice and anti-slop rules,
+    and a user prompt from the brief, fandom context, and chapter position.
     """
-    return f"Draft chapter {chapter_num} of {total_chapters}."
+    from write.api import call_claude
+
+    # --- System prompt: set the writer's voice and constraints ---
+    identity_block = context.get("identity", "")
+    anti_slop_rules = context.get("anti_slop_rules", "")
+
+    system = f"""You are writing fanfiction. Write in close third-person, past tense.
+
+VOICE:
+{identity_block}
+
+ANTI-SLOP RULES (violating these is a hard failure):
+{anti_slop_rules}
+
+STRUCTURAL ANTI-PATTERNS (avoid all of these):
+- NO groups or lists of three ("X, Y, and Z"). Combine two, cut one, or restructure.
+- NO sarcastic quips or performative self-awareness from the narrator.
+- NO balanced "not X, but Y" sentence structures more than once per chapter.
+- NO over-explaining after showing. If a scene demonstrates something, do not restate it.
+- NO "He did not [verb]" more than once. Convert negatives to active alternatives.
+- NO "He thought about [X]" constructions. Use the thought itself as a fragment, a physical action, or dialogue.
+- NO "the way [X] did [Y]" as a simile connector more than twice. Vary simile structures.
+- NO section breaks (---) as rhythm crutches. Max 2 per chapter, for genuine time/location jumps.
+- VARY paragraph length deliberately. Never 3+ consecutive paragraphs of similar length.
+- DIALOGUE should sound like speech, not prose. Characters stumble, interrupt, trail off.
+- 70%+ of the chapter should be in-scene (moment by moment) rather than summary.
+- Include at least one moment that surprises -- a beat arriving early, late, or sideways.
+
+Write the FULL chapter. Do not truncate, summarize, or skip ahead."""
+
+    # --- User prompt: the specific writing task ---
+    fandom_context = context.get("fandom_context", "")
+    brief_text = context.get("brief_text", "")
+
+    chapter_position = ""
+    if total_chapters > 1:
+        chapter_position = (
+            f"This is chapter {chapter_num} of {total_chapters}.\n"
+        )
+        if previous_chapter_tail:
+            chapter_position += (
+                f"\nPREVIOUS CHAPTER'S ENDING (continue from here):\n"
+                f"{previous_chapter_tail}\n"
+            )
+
+    prompt = f"""{chapter_position}STORY BRIEF:
+{brief_text}
+
+FANDOM CONTEXT AND CHARACTER VOICES:
+{fandom_context}
+
+TARGET LENGTH: {brief.target_length} words.
+
+Write the chapter now. Full text, beginning to end."""
+
+    max_tokens = int(brief.target_length * 1.5)
+    # Clamp to reasonable bounds
+    max_tokens = max(4000, min(max_tokens, 32000))
+
+    return call_claude(system=system, prompt=prompt, max_tokens=max_tokens)
 
 
 def evaluate_draft(
