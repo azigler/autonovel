@@ -153,9 +153,49 @@ def call_revision_model(
     revision_brief: str,
     context: dict[str, Any] | None = None,
 ) -> str:
-    """Call the revision model (stub -- returns original draft).
+    """Call the Claude API to revise a draft according to the revision brief.
 
-    Will be replaced with real Claude API call.
+    The model receives the full draft and specific revision instructions,
+    and returns the complete revised text.
     """
-    # Default stub: return a lightly modified version
-    return f"[REVISED] {draft_text}"
+    from write.api import call_claude
+
+    system = (
+        "You are revising a piece of fanfiction. Apply the revision brief "
+        "exactly. Preserve everything that works. Only change what the brief "
+        "specifies. Return the complete revised text, not a diff or summary."
+    )
+
+    # Include identity/voice context if available so the revision
+    # preserves the correct character voices and writing style.
+    context_block = ""
+    if context:
+        identity = context.get("identity", "")
+        fandom = context.get("fandom_context", "")
+        anti_slop = context.get("anti_slop_rules", "")
+        if identity:
+            context_block += f"\nVOICE REFERENCE:\n{identity}\n"
+        if fandom:
+            context_block += f"\nFANDOM CONTEXT:\n{fandom}\n"
+        if anti_slop:
+            context_block += f"\nANTI-SLOP RULES:\n{anti_slop}\n"
+
+    prompt = f"""{context_block}
+REVISION BRIEF (follow these instructions exactly):
+{revision_brief}
+
+CURRENT DRAFT (revise this):
+{draft_text}
+
+Write the complete revised text now."""
+
+    # Give enough room for the full revised draft
+    max_tokens = max(4000, len(draft_text.split()) * 2)
+    max_tokens = min(max_tokens, 32000)
+
+    return call_claude(
+        system=system,
+        prompt=prompt,
+        max_tokens=max_tokens,
+        temperature=0.7,
+    )
