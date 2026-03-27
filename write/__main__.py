@@ -71,7 +71,7 @@ def cmd_list() -> None:
     for run_dir in sorted(runs_dir.iterdir()):
         state_file = run_dir / "state.json"
         if state_file.exists():
-            state = load_state(run_dir.name, str(runs_dir))
+            state = load_state(str(run_dir / "state.json"))
             words = (
                 sum(len(ch.split()) for ch in state.draft_chapters)
                 if state.draft_chapters
@@ -84,7 +84,7 @@ def cmd_list() -> None:
 
 def cmd_show(run_id: str) -> None:
     """Show details of a run."""
-    state = load_state(run_id, str(DEFAULT_RUNS_DIR))
+    state = load_state(str(DEFAULT_RUNS_DIR / run_id / "state.json"))
     print(f"Run: {state.run_id}")
     print(f"State: {state.state}")
     print(f"Created: {state.created_at}")
