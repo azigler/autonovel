@@ -7,6 +7,7 @@ With REVISE loop between EVALUATE and back, and ERROR for failures.
 
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
@@ -31,12 +32,27 @@ from write.revision import (
 )
 from write.state import WriteLoopState, load_state, save_state
 
+logger = logging.getLogger(__name__)
+
 # Maximum revision cycles before giving up
 MAX_REVISIONS = 3
 MAX_ERROR_RETRIES = 3
 
 # Default runs directory
 DEFAULT_RUNS_DIR = Path("write/runs")
+
+# Path to SOUL.md
+_SOUL_PATH = Path("identity/soul.md")
+
+
+def load_soul(path: Path | None = None) -> str:
+    """Load SOUL.md text. Returns empty string if missing."""
+    p = path or _SOUL_PATH
+    try:
+        return p.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        logger.warning("SOUL.md not found at %s, continuing without it.", p)
+        return ""
 
 
 # ---------------------------------------------------------------------------
@@ -74,11 +90,28 @@ def draft_chapter(
     chapter_num: int = 1,
     total_chapters: int = 1,
     previous_chapter_tail: str = "",
+    soul: str = "",
+    seeds: list[str] | None = None,
+    config: Any = None,
+    length_retry: bool = False,
+    previous_word_count: int = 0,
 ) -> str:
     """Draft a chapter using the Claude API.
 
     Builds a system prompt from the identity voice and anti-slop rules,
     and a user prompt from the brief, fandom context, and chapter position.
+
+    Args:
+        brief: The story brief.
+        context: Assembled context dict.
+        chapter_num: Current chapter number (1-indexed).
+        total_chapters: Total chapters in this work.
+        previous_chapter_tail: Ending text from previous chapter.
+        soul: SOUL.md text to include in the system prompt.
+        seeds: Creative seeds from the muse to include in the user prompt.
+        config: WriteConfig instance (optional).
+        length_retry: If True, this is a retry after length undershoot.
+        previous_word_count: Word count from the previous attempt (for retry).
     """
     from write.api import call_claude
 
@@ -86,11 +119,15 @@ def draft_chapter(
     identity_block = context.get("identity", "")
     anti_slop_rules = context.get("anti_slop_rules", "")
 
+    soul_block = ""
+    if soul:
+        soul_block = f"\nTHEMATIC DNA (what this writer cares about):\n{soul}\n"
+
     system = f"""You are writing fanfiction. Write in close third-person, past tense.
 
 VOICE:
 {identity_block}
-
+{soul_block}
 ANTI-SLOP RULES (violating these is a hard failure):
 {anti_slop_rules}
 
@@ -131,14 +168,45 @@ OUTPUT RULES:
                 f"{previous_chapter_tail}\n"
             )
 
+    # Creative seeds from the muse
+    seeds_block = ""
+    if seeds:
+        formatted = "\n".join(f"- {s}" for s in seeds)
+        seeds_block = (
+            f"\nCREATIVE SEEDS (from the muse -- use or ignore as "
+            f"inspiration):\n{formatted}\n"
+        )
+
+    # Length instruction per config
+    length_enforcement = "prompt"
+    if config is not None:
+        length_enforcement = getattr(config, "length_enforcement", "prompt")
+
+    length_instruction = ""
+    if length_enforcement == "none":
+        length_instruction = ""
+    elif length_retry:
+        length_instruction = (
+            f"\nCRITICAL: Your previous draft was {previous_word_count} words. "
+            f"The MINIMUM is {brief.target_length} words. You MUST write at "
+            f"least {brief.target_length} words. Expand scenes, add interiority, "
+            f"let dialogue breathe. Do not compress.\n"
+        )
+    else:
+        length_instruction = (
+            f"\nMINIMUM LENGTH: {brief.target_length} words. Write at least "
+            f"{brief.target_length} words. The piece should feel complete and "
+            f"unhurried at this length, not truncated or compressed. Allow "
+            f"scenes to breathe. Do not self-edit for brevity during drafting "
+            f"-- that is what revision is for.\n"
+        )
+
     prompt = f"""{chapter_position}STORY BRIEF:
 {brief_text}
 
 FANDOM CONTEXT AND CHARACTER VOICES:
 {fandom_context}
-
-TARGET LENGTH: {brief.target_length} words.
-
+{seeds_block}{length_instruction}
 Write the chapter now. Full text, beginning to end."""
 
     max_tokens = int(brief.target_length * 1.5)
@@ -193,6 +261,32 @@ def queue_work(publish_request: Any) -> str:
     Returns a queue_id.
     """
     return f"q-{uuid.uuid4().hex[:8]}"
+
+
+def muse_creative_seeds(
+    soul: str,
+    brief: str,
+    fandom_context: str,
+    config: Any,
+) -> list[str]:
+    """Pre-draft muse (patchable entry point)."""
+    from write.muse import generate_creative_seeds as _impl
+
+    return _impl(
+        soul=soul, brief=brief, fandom_context=fandom_context, config=config
+    )
+
+
+def muse_depth_notes(
+    draft: str,
+    soul: str,
+    scores: dict[str, Any],
+    config: Any,
+) -> list[str]:
+    """Mid-revision muse (patchable entry point)."""
+    from write.muse import generate_depth_notes as _impl
+
+    return _impl(draft=draft, soul=soul, scores=scores, config=config)
 
 
 # ---------------------------------------------------------------------------
@@ -257,19 +351,21 @@ def _run_from_state(state: WriteLoopState) -> WriteLoopState:
     state_path = _get_state_path(state.run_id)
     context: dict[str, Any] = {}
     identity: dict[str, Any] = {}
+    soul: str = ""
+    config = None
 
     while state.state not in ("DONE", "ERROR"):
         try:
             if state.state == "BRIEF":
                 state = _step_brief(state)
             elif state.state == "CONTEXT":
-                state, identity, context = _step_context(state)
+                state, identity, context, soul, config = _step_context(state)
             elif state.state == "DRAFT":
-                state = _step_draft(state, context)
+                state = _step_draft(state, context, soul=soul, config=config)
             elif state.state == "EVALUATE":
-                state = _step_evaluate(state, context)
+                state = _step_evaluate(state, context, soul=soul, config=config)
             elif state.state == "REVISE":
-                state = _step_revise(state, context)
+                state = _step_revise(state, context, soul=soul, config=config)
             elif state.state == "PREPARE":
                 state, identity = _step_prepare(state, identity)
             elif state.state == "QUEUE":
@@ -338,8 +434,8 @@ def _step_brief(state: WriteLoopState) -> WriteLoopState:
 
 def _step_context(
     state: WriteLoopState,
-) -> tuple[WriteLoopState, dict[str, Any], dict[str, Any]]:
-    """CONTEXT state: load identity and assemble context."""
+) -> tuple[WriteLoopState, dict[str, Any], dict[str, Any], str, Any]:
+    """CONTEXT state: load identity, soul, config, and assemble context."""
     identity = load_identity()
 
     context = assemble_context(
@@ -347,23 +443,56 @@ def _step_context(
         identity=identity,
     )
 
+    # Load SOUL.md
+    soul = load_soul()
+
+    # Load config (with per-brief overrides if available)
+    from write.config import WriteConfig, load_config
+
+    overrides = None
+    if state.brief is not None and hasattr(state.brief, "config_overrides"):
+        overrides = getattr(state.brief, "config_overrides", None)
+    try:
+        config = load_config(overrides=overrides)
+    except (ValueError, Exception):
+        logger.warning("Config load failed, using defaults.")
+        config = WriteConfig()
+
+    state.config_snapshot = config.to_dict()
     state.context_assembled = True
     state.context_token_counts = context.get("token_counts", {})
     state.state = "DRAFT"
-    return state, identity, context
+    return state, identity, context, soul, config
 
 
 def _step_draft(
     state: WriteLoopState,
     context: dict[str, Any],
+    soul: str = "",
+    config: Any = None,
 ) -> WriteLoopState:
-    """DRAFT state: draft one or more chapters."""
+    """DRAFT state: fire pre-draft muse (if enabled) and draft chapters."""
     brief = state.brief
     if brief is None:
         state.state = "ERROR"
         state.error_detail = "No brief in state"
         state.error_from = "DRAFT"
         return state
+
+    # Fire pre-draft muse (non-fatal -- if it fails, draft without seeds)
+    seeds: list[str] = []
+    if config is not None and getattr(config, "muse_enabled", False):
+        try:
+            seeds = muse_creative_seeds(
+                soul=soul,
+                brief=context.get("brief_text", ""),
+                fandom_context=context.get("fandom_context", ""),
+                config=config,
+            )
+            state.pre_draft_seeds = seeds
+        except Exception:
+            logger.warning("Pre-draft muse failed, continuing without seeds.")
+            seeds = []
 
     chapters: list[str] = []
 
@@ -379,6 +508,9 @@ def _step_draft(
                 chapter_num=i,
                 total_chapters=num_chapters,
                 previous_chapter_tail=prev_tail,
+                soul=soul,
+                seeds=seeds if i == 1 else None,
+                config=config,
             )
             chapters.append(chapter_text)
     else:
@@ -388,11 +520,55 @@ def _step_draft(
             context=context,
             chapter_num=1,
             total_chapters=1,
+            soul=soul,
+            seeds=seeds,
+            config=config,
         )
         chapters.append(chapter_text)
 
+    # Length retry mode
+    total_wc = sum(len(c.split()) for c in chapters)
+    length_enforcement = "prompt"
+    tolerance = 0.15
+    if config is not None:
+        length_enforcement = getattr(config, "length_enforcement", "prompt")
+        tolerance = getattr(config, "target_length_tolerance", 0.15)
+
+    min_acceptable = brief.target_length * (1 - tolerance)
+    if (
+        length_enforcement == "retry"
+        and total_wc < min_acceptable
+        and state.length_retry_count == 0
+    ):
+        state.length_retry_count += 1
+        logger.info(
+            "Length undershoot: %d < %d. Retrying with stronger instruction.",
+            total_wc,
+            int(min_acceptable),
+        )
+        # Redraft (one-shot only for simplicity)
+        if brief.format != "multi_chapter":
+            chapter_text = draft_chapter(
+                brief=brief,
+                context=context,
+                chapter_num=1,
+                total_chapters=1,
+                soul=soul,
+                seeds=seeds,
+                config=config,
+                length_retry=True,
+                previous_word_count=total_wc,
+            )
+            chapters = [chapter_text]
+            total_wc = len(chapter_text.split())
+            if total_wc < min_acceptable:
+                state.warnings.append(
+                    f"Length retry still undershooting: {total_wc} < "
+                    f"{int(min_acceptable)} words."
+                )
+
     state.draft_chapters = chapters
-    state.draft_word_count = sum(len(c.split()) for c in chapters)
+    state.draft_word_count = total_wc
     state.state = "EVALUATE"
     return state
 
@@ -400,8 +576,10 @@ def _step_draft(
 def _step_evaluate(
     state: WriteLoopState,
     context: dict[str, Any],
+    soul: str = "",
+    config: Any = None,
 ) -> WriteLoopState:
-    """EVALUATE state: run evaluation gates on the draft."""
+    """EVALUATE state: run evaluation gates, fire mid-revision muse."""
     full_text = "\n\n".join(state.draft_chapters)
     scores = evaluate_draft(
         draft_text=full_text,
@@ -413,13 +591,37 @@ def _step_evaluate(
     passed, reason = evaluate_gate(scores)
     state.gate_result = reason
 
+    # Fire mid-revision muse (after first evaluation)
+    if (
+        config is not None
+        and getattr(config, "muse_enabled", False)
+        and len(state.evaluation_history) == 1
+    ):
+        try:
+            notes = muse_depth_notes(
+                draft=full_text,
+                soul=soul,
+                scores=scores,
+                config=config,
+            )
+            state.mid_revision_notes = notes
+        except Exception:
+            logger.warning(
+                "Mid-revision muse failed, continuing without notes."
+            )
+
+    # Determine max revisions from config
+    max_revisions = MAX_REVISIONS
+    if config is not None:
+        max_revisions = getattr(config, "max_revision_cycles", MAX_REVISIONS)
+
     if passed:
         state.final_scores = scores
         state.state = "PREPARE"
-    elif state.revision_count >= MAX_REVISIONS:
+    elif state.revision_count >= max_revisions:
         state.max_revisions_reached = True
         state.warnings.append(
-            f"Max revisions ({MAX_REVISIONS}) reached. "
+            f"Max revisions ({max_revisions}) reached. "
             f"Last gate result: {reason}. Proceeding to PREPARE."
         )
         state.final_scores = scores
@@ -433,6 +635,8 @@ def _step_evaluate(
 def _step_revise(
     state: WriteLoopState,
     context: dict[str, Any],
+    soul: str = "",
+    config: Any = None,
 ) -> WriteLoopState:
     """REVISE state: generate revision brief and revise the draft."""
     state.revision_count += 1

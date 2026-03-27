@@ -40,6 +40,7 @@ def call_claude(
     prompt: str,
     max_tokens: int = 16000,
     temperature: float = 0.8,
+    model: str | None = None,
 ) -> str:
     """Call the Anthropic Messages API and return the assistant text.
 
@@ -51,6 +52,7 @@ def call_claude(
         prompt: User-role message (the specific writing task).
         max_tokens: Maximum tokens in the response.
         temperature: Sampling temperature (0.8 for drafting, 0.7 for revision).
+        model: Full model ID to use. If None, uses the default from env.
 
     Returns:
         The text content of the first content block in the response.
@@ -60,7 +62,8 @@ def call_claude(
         httpx.HTTPStatusError: If the API returns a non-2xx status.
     """
     api_key = _get_api_key()
-    model = _get_model()
+    if model is None:
+        model = _get_model()
     api_base = _get_api_base()
 
     headers = {

@@ -53,6 +53,13 @@ class WriteLoopState:
     # Warnings
     warnings: list[str] = field(default_factory=list)
 
+    # Muse and config (added by soul-and-muse spec)
+    pre_draft_seeds: list[str] = field(default_factory=list)
+    mid_revision_notes: list[str] = field(default_factory=list)
+    revision_pass_log: list[list[dict]] = field(default_factory=list)
+    config_snapshot: dict[str, Any] = field(default_factory=dict)
+    length_retry_count: int = 0
+
 
 def save_state(state: WriteLoopState, path: str | Path) -> None:
     """Persist WriteLoopState to a JSON file."""

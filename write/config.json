@@ -1,0 +1,15 @@
+{
+  "temperature": 0.8,
+  "writer_model": "sonnet",
+  "revision_temperature": 0.7,
+  "revision_passes": 4,
+  "max_revision_cycles": 3,
+  "muse_enabled": true,
+  "muse_temperature": 1.0,
+  "muse_model": "haiku",
+  "muse_seed_count": 4,
+  "slop_threshold": 3.0,
+  "quality_threshold": 7.0,
+  "target_length_tolerance": 0.15,
+  "length_enforcement": "prompt"
+}
