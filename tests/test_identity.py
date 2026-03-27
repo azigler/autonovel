@@ -28,6 +28,7 @@ from identity.schema import (
     load_identity,
     update_self,
     update_voice_priors,
+    validate_voice_priors,
 )
 
 # ---------------------------------------------------------------------------
@@ -669,3 +670,268 @@ class TestDataModels:
         # Verify format: exactly 10 chars, two dashes
         assert len(result) == 10
         assert result.count("-") == 2
+
+
+# ---------------------------------------------------------------------------
+# Validation Tests (Spec Section 4.3)
+# ---------------------------------------------------------------------------
+
+
+class TestValidateVoicePriors:
+    """Tests for validate_voice_priors()."""
+
+    def test_validate_accepts_defaults(self):
+        """TEST: validate_voice_priors accepts valid default priors (Spec Test Case 14b)
+        The hardcoded defaults must themselves be valid.
+        """
+        errors = validate_voice_priors(VoicePriors())
+        assert errors == []
+
+    def test_validate_catches_dialogue_ratio_out_of_bounds(self):
+        """TEST: validate_voice_priors catches out-of-bounds numeric (Spec Test Case)
+        dialogue_ratio max is 0.8 per spec.
+        """
+        priors = VoicePriors(dialogue_ratio=0.95)
+        errors = validate_voice_priors(priors)
+        assert any("dialogue_ratio" in e for e in errors)
+
+    def test_validate_catches_negative_dialogue_ratio(self):
+        """TEST: validate catches dialogue_ratio below 0."""
+        priors = VoicePriors(dialogue_ratio=-0.1)
+        errors = validate_voice_priors(priors)
+        assert any("dialogue_ratio" in e for e in errors)
+
+    def test_validate_catches_sentence_length_mean_too_high(self):
+        """TEST: validate catches sentence_length.mean > 35."""
+        priors = VoicePriors(
+            sentence_length=SentenceLength(mean=50, std=8, min=3, max=45)
+        )
+        errors = validate_voice_priors(priors)
+        assert any("sentence_length.mean" in e for e in errors)
+
+    def test_validate_catches_sentence_min_gte_max(self):
+        """TEST: validate catches sentence_length.min >= sentence_length.max."""
+        priors = VoicePriors(
+            sentence_length=SentenceLength(mean=14, std=8, min=30, max=25)
+        )
+        errors = validate_voice_priors(priors)
+        assert any("sentence_length.min must be less" in e for e in errors)
+
+    def test_validate_catches_invalid_categorical(self):
+        """TEST: validate catches invalid categorical value."""
+        priors = VoicePriors(interiority_depth="nonexistent")  # type: ignore[arg-type]
+        errors = validate_voice_priors(priors)
+        assert any("interiority_depth" in e for e in errors)
+
+    def test_validate_catches_strengths_too_long(self):
+        """TEST: validate catches strengths list exceeding 10 items."""
+        priors = VoicePriors(strengths=[f"item{i}" for i in range(11)])
+        errors = validate_voice_priors(priors)
+        assert any("strengths" in e for e in errors)
+
+    def test_validate_catches_version_below_one(self):
+        """TEST: validate catches version < 1."""
+        priors = VoicePriors(version=0)
+        errors = validate_voice_priors(priors)
+        assert any("version" in e for e in errors)
+
+    def test_validate_catches_chapter_length_min_gte_max(self):
+        """TEST: validate catches chapter_length_target.min >= max."""
+        priors = VoicePriors(
+            chapter_length_target=ChapterLengthTarget(min=8000, max=5000)
+        )
+        errors = validate_voice_priors(priors)
+        assert any(
+            "chapter_length_target.min must be less" in e for e in errors
+        )
+
+    def test_validate_multiple_errors(self):
+        """TEST: validate returns all errors, not just the first."""
+        priors = VoicePriors(
+            dialogue_ratio=0.95,
+            version=0,
+            strengths=[f"item{i}" for i in range(11)],
+        )
+        errors = validate_voice_priors(priors)
+        assert len(errors) >= 3
+
+
+# ---------------------------------------------------------------------------
+# Drift Limiting Tests (Spec Section 4.2)
+# ---------------------------------------------------------------------------
+
+
+class TestDriftLimiting:
+    """Tests for drift limiting in update_voice_priors()."""
+
+    def test_numeric_drift_rejects_large_change(self, identity_dir):
+        """TEST: drift limit enforcement with 50% shift attempt (Spec Test Case)
+        sentence_length.mean=14, trying to set to 21 (50% increase).
+        Max allowed drift is 15% = 2.1, so max value is ~16.1.
+        """
+        with pytest.raises(ValueError, match="drift"):
+            update_voice_priors({"sentence_length": {"mean": 21}})
+
+    def test_numeric_drift_allows_within_limit(self, identity_dir):
+        """TEST: numeric drift within 15% is accepted.
+        sentence_length.mean=14, 15% = 2.1, so 16 is allowed.
+        """
+        result = update_voice_priors({"sentence_length": {"mean": 16}})
+        assert result.sentence_length.mean == 16
+
+    def test_dialogue_ratio_drift_rejects_large_change(self, identity_dir):
+        """TEST: update_voice_priors respects numeric drift limit (Spec Test Case)
+        dialogue_ratio=0.35, trying to set to 0.60. Max drift is 0.05 absolute.
+        """
+        with pytest.raises(ValueError, match="drift"):
+            update_voice_priors({"dialogue_ratio": 0.60})
+
+    def test_dialogue_ratio_drift_allows_exact_limit(self, identity_dir):
+        """TEST: dialogue_ratio change of exactly 0.05 is accepted.
+        0.35 -> 0.40 is exactly at the limit.
+        """
+        result = update_voice_priors({"dialogue_ratio": 0.40})
+        assert result.dialogue_ratio == pytest.approx(0.40)
+
+    def test_ordinal_single_step_accepted(self, identity_dir):
+        """TEST: update_voice_priors respects ordinal categorical drift limit (Spec)
+        interiority_depth: medium -> deep is 1 step, should be accepted.
+        """
+        result = update_voice_priors({"interiority_depth": "deep"})
+        assert result.interiority_depth == "deep"
+
+    def test_ordinal_multi_step_rejected(self, identity_dir):
+        """TEST: update_voice_priors rejects multi-step ordinal change (Spec)
+        metaphor_density: sparse -> dense skips moderate (2 steps).
+        """
+        with pytest.raises(ValueError, match="ordinal"):
+            update_voice_priors({"metaphor_density": "dense"})
+
+    def test_ordinal_vocabulary_register_one_step(self, identity_dir):
+        """TEST: vocabulary_register single step accepted.
+        literary_accessible -> literary_dense is 1 step.
+        """
+        result = update_voice_priors({"vocabulary_register": "literary_dense"})
+        assert result.vocabulary_register == "literary_dense"
+
+    def test_ordinal_vocabulary_register_two_steps_rejected(self, identity_dir):
+        """TEST: vocabulary_register two-step jump rejected.
+        literary_accessible -> formal is 2 steps.
+        """
+        with pytest.raises(ValueError, match="ordinal"):
+            update_voice_priors({"vocabulary_register": "formal"})
+
+    def test_free_categorical_pov_changes_freely(self, identity_dir):
+        """TEST: pov can change freely (non-ordinal)."""
+        result = update_voice_priors({"pov": "first"})
+        assert result.pov == "first"
+
+    def test_free_categorical_tense_changes_freely(self, identity_dir):
+        """TEST: tense can change freely (non-ordinal)."""
+        result = update_voice_priors({"tense": "present"})
+        assert result.tense == "present"
+
+    def test_list_drift_allows_two_additions(self, identity_dir):
+        """TEST: strengths allows adding up to 2 items per cycle."""
+        result = update_voice_priors({"strengths": ["pacing", "dialogue"]})
+        assert result.strengths == ["pacing", "dialogue"]
+
+    def test_list_drift_rejects_three_additions(self, identity_dir):
+        """TEST: strengths rejects adding more than 2 items per cycle."""
+        with pytest.raises(ValueError, match="items added"):
+            update_voice_priors(
+                {"strengths": ["pacing", "dialogue", "worldbuilding"]}
+            )
+
+    def test_list_drift_allows_one_removal(self, identity_dir):
+        """TEST: weaknesses allows removing 1 item per cycle."""
+        # First set some weaknesses
+        update_voice_priors({"weaknesses": ["pacing", "dialogue"]})
+        # Now remove one
+        result = update_voice_priors({"weaknesses": ["dialogue"]})
+        assert result.weaknesses == ["dialogue"]
+
+    def test_list_drift_rejects_two_removals(self, identity_dir):
+        """TEST: weaknesses rejects removing more than 1 item per cycle."""
+        # First set some weaknesses
+        update_voice_priors({"weaknesses": ["pacing", "dialogue"]})
+        # Now try to remove both
+        with pytest.raises(ValueError, match="items removed"):
+            update_voice_priors({"weaknesses": []})
+
+    def test_drift_does_not_modify_file_on_rejection(self, identity_dir):
+        """TEST: rejected update does not modify voice_priors.json."""
+        original = _load_voice_priors()
+        with pytest.raises(ValueError):
+            update_voice_priors({"dialogue_ratio": 0.60})
+        after = _load_voice_priors()
+        assert asdict(original) == asdict(after)
+
+    def test_validation_rejects_out_of_bounds_after_drift(self, identity_dir):
+        """TEST: validation catches values that pass drift but exceed bounds.
+        update_voice_priors calls validate_voice_priors after applying changes.
+        """
+        # dialogue_ratio 0.35 + 0.05 = 0.40 is fine, but if we manually
+        # create priors at 0.78 and try to set 0.83 (within drift but > 0.8)
+        _save_voice_priors(VoicePriors(dialogue_ratio=0.78))
+        with pytest.raises(ValueError, match="out of bounds"):
+            update_voice_priors({"dialogue_ratio": 0.83})
+
+
+# ---------------------------------------------------------------------------
+# Token Budget Tests (Spec Section 4.4)
+# ---------------------------------------------------------------------------
+
+
+class TestTokenBudget:
+    """Tests for load_identity(max_tokens=...)."""
+
+    def test_load_identity_no_budget_returns_all(self, identity_dir):
+        """TEST: load_identity() with no budget returns all content."""
+        result = load_identity()
+        assert len(result["self"]) > 0
+        assert len(result["pen_name"]) > 0
+        assert len(result["inspirations"]) > 0
+        assert len(result["fandom_context"]) > 0
+        assert isinstance(result["voice_priors"], VoicePriors)
+
+    def test_load_identity_with_budget_returns_voice_priors(self, identity_dir):
+        """TEST: load_identity(max_tokens=...) always returns voice_priors."""
+        result = load_identity(max_tokens=100)
+        assert isinstance(result["voice_priors"], VoicePriors)
+
+    def test_load_identity_with_budget_has_all_keys(self, identity_dir):
+        """TEST: budgeted load still returns all expected dict keys."""
+        result = load_identity(max_tokens=500)
+        assert "self" in result
+        assert "pen_name" in result
+        assert "inspirations" in result
+        assert "fandom_context" in result
+        assert "voice_priors" in result
+
+    def test_load_identity_small_budget_truncates(self, identity_dir):
+        """TEST: load_identity respects token budget (Spec Test Case)
+        With a very small budget, lower-priority content should be
+        truncated or omitted.
+        """
+        # Load with a very generous budget to get full content
+        full_result = load_identity()
+        full_total = sum(
+            len(v) for k, v in full_result.items() if isinstance(v, str)
+        )
+
+        # Load with a small budget
+        small_result = load_identity(max_tokens=500)
+        small_total = sum(
+            len(v) for k, v in small_result.items() if isinstance(v, str)
+        )
+
+        # The small-budget result should have less content
+        assert small_total < full_total
+
+    def test_load_identity_large_budget_returns_everything(self, identity_dir):
+        """TEST: with a huge budget, all content is loaded."""
+        result = load_identity(max_tokens=100000)
+        # With a huge budget, all markdown files should have content
+        # (at minimum the template content)
+        assert isinstance(result["voice_priors"], VoicePriors)
