@@ -1,8 +1,8 @@
 {
-  "sentence_length": { "mean": 14, "std": 8, "min": 3, "max": 45 },
-  "paragraph_length": { "mean": 4, "std": 2 },
-  "dialogue_ratio": 0.35,
-  "interiority_depth": "medium",
+  "sentence_length": { "mean": 12, "std": 7, "min": 2, "max": 38 },
+  "paragraph_length": { "mean": 3, "std": 2 },
+  "dialogue_ratio": 0.3,
+  "interiority_depth": "deep",
   "metaphor_density": "sparse",
   "pov": "third_limited",
   "tense": "past",
@@ -11,9 +11,12 @@
   "sensory_detail_density": "high",
   "emotional_directness": "indirect",
   "pacing_preference": "slow_burn",
-  "chapter_length_target": { "min": 3000, "max": 6000 },
-  "strengths": [],
-  "weaknesses": [],
-  "updated_at": null,
+  "chapter_length_target": { "min": 4000, "max": 6000 },
+  "strengths": ["sensory grounding", "subtext through physicality"],
+  "weaknesses": [
+    "sustaining momentum in plotless pieces",
+    "dialogue subtext clarity"
+  ],
+  "updated_at": "2026-03-26",
   "version": 1
 }
