@@ -44,11 +44,7 @@ All gates must pass. Abort the release if any fail. Run whatever quality checks
 the project uses:
 
 ```bash
-# Examples -- adapt to your project:
-# Node/Bun:  bun run typecheck && bun test
-# Rust:      cargo check && cargo test && cargo clippy -- -D warnings
-# Python:    mypy . && pytest
-# Go:        go vet ./... && go test ./...
+ruff check . && uv run pytest
 ```
 
 ### Step 3: Determine Version
@@ -59,24 +55,19 @@ If a specific version was provided (e.g., `v1.2.0`), use it. Otherwise:
 - `minor` -- Increment the minor number (1.2.0 -> 1.3.0)
 - `major` -- Increment the major number (1.2.0 -> 2.0.0)
 
-Read the current version from the project's version source (package.json, Cargo.toml,
-pyproject.toml, etc.).
+Read the current version from `pyproject.toml`.
 
 ### Step 4: Bump Versions
 
 Update version strings in all relevant files. Common locations:
 
-- `package.json` (and workspace member package.json files)
-- `Cargo.toml` (workspace and member crates)
 - `pyproject.toml`
-- `version.go` or constants files
 - Any other files that embed the version string
 
 Verify the bump:
 ```bash
-# Check that all version references are consistent
-grep -r '"version"' */package.json package.json 2>/dev/null | head -20
-grep 'version =' */Cargo.toml Cargo.toml 2>/dev/null | head -20
+# Check that version is consistent
+grep 'version' pyproject.toml | head -5
 ```
 
 ### Step 5: Update PLAN.md
@@ -182,7 +173,7 @@ Instead, print what would happen:
 
 ```
 [dry-run] Would bump version: 1.2.0 -> 1.2.1
-[dry-run] Would update 3 package.json files
+[dry-run] Would update pyproject.toml
 [dry-run] Would update CHANGELOG.md (move 2 unreleased entries)
 [dry-run] Would create commit: ":rocket: release v1.2.1"
 [dry-run] Would create tag: v1.2.1

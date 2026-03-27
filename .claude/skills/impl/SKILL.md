@@ -173,7 +173,7 @@ Implementation for [Name].
 
 ## CRITICAL RULES
 1. Do NOT use the Agent tool. You are a leaf agent -- do all work directly.
-2. Do NOT create or modify test files (`__tests__/`, `*.test.ts`). The tests
+2. Do NOT create or modify test files (`tests/`, `test_*.py`). The tests
    define the contract -- adapt your implementation to match the tests, not the
    other way around.
 3. Read the test file FIRST to understand what it imports and expects.

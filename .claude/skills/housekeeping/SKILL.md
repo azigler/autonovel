@@ -13,7 +13,7 @@ Mechanical, non-creative changes that don't introduce new logic or behavior.
 - Updating architecture decisions in PLAN.md and CLAUDE.md
 - Writing documentation (setup guides, workflow docs)
 - Terminology renames (find-and-replace across files)
-- Version bumps (package.json, constants)
+- Version bumps (pyproject.toml, constants)
 - Stale doc/table cleanup (removing hardcoded counts, outdated tables)
 - Gitignore updates
 - Skill file creation or maintenance
@@ -48,27 +48,23 @@ List every file and change needed. Group by type:
 | **Doc creation** | Read the source material being converted to docs |
 
 ```bash
-# Example: verify nothing imports from directories being deleted
-rg "from.*factory/scaffold" --type ts
-rg "from.*factory/setup" --type ts
-rg "from.*factory/update" --type ts
-rg "from.*templates/" --type ts
+# Example: verify nothing imports from modules being deleted
+rg "from.*identity\.old" --type py
+rg "import.*identity\.old" --type py
 ```
 
 ### 2. Dependency Check (Critical for Deletions)
 
 Before deleting any directory or file:
 
-1. **Grep for imports** -- search all `.ts` files for import paths referencing the target
-2. **Grep for requires** -- search for `require()` calls
-3. **Check test files** -- tests for deleted code should also be deleted
-4. **Check package.json** -- remove script aliases and dependencies that only served deleted code
-5. **Check CLAUDE.md** -- update directory layout if it references deleted paths
+1. **Grep for imports** -- search all `.py` files for import paths referencing the target
+2. **Check test files** -- tests for deleted code should also be deleted
+3. **Check pyproject.toml** -- remove scripts and dependencies that only served deleted code
+4. **Check CLAUDE.md** -- update directory layout if it references deleted paths
 
 ```bash
 # Full dependency scan before deletion
-rg "(from|require).*factory/(scaffold|setup|update|cli|registry|connectors|types|layers)" --type ts
-rg "(from|require).*templates/" --type ts
+rg "(from|import).*target_module" --type py
 ```
 
 If anything imports from a deletion target, classify:
@@ -81,7 +77,7 @@ Work in this order to avoid broken intermediate states:
 
 1. **Delete code** -- remove deprecated directories and files
 2. **Delete tests** -- remove tests for deleted code
-3. **Update package.json** -- remove dead scripts and deps
+3. **Update pyproject.toml** -- remove dead scripts and deps
 4. **Add deprecation markers** -- update spec frontmatter
 5. **Update architecture decisions** -- rewrite ADs in PLAN.md
 6. **Update CLAUDE.md** -- reflect new directory layout and decisions
@@ -91,20 +87,14 @@ Work in this order to avoid broken intermediate states:
 
 ```bash
 # Confirm deletions
-ls factory/scaffold/ 2>/dev/null && echo "FAIL: scaffold still exists" || echo "OK"
-ls factory/setup/ 2>/dev/null && echo "FAIL: setup still exists" || echo "OK"
-ls factory/update/ 2>/dev/null && echo "FAIL: update still exists" || echo "OK"
-ls templates/ 2>/dev/null && echo "FAIL: templates still exists" || echo "OK"
+ls target_dir/ 2>/dev/null && echo "FAIL: target still exists" || echo "OK"
 
 # Confirm no dangling imports
-rg "(from|require).*(factory/scaffold|factory/setup|factory/update|templates/)" --type ts
+rg "(from|import).*target_module" --type py
 
-# If TypeScript code was touched:
-bunx tsc --noEmit 2>&1 | tail -20
-bun test 2>&1 | tail -20
-
-# Confirm preserved directories
-ls factory/feedback/ factory/sharing/ factory/o11y/ connectors/
+# If Python code was touched:
+ruff check . 2>&1 | tail -20
+uv run pytest 2>&1 | tail -20
 ```
 
 Skip build/test checks if only documentation files were changed.
