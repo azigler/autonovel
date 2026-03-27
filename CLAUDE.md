@@ -52,6 +52,12 @@ This project uses lb-skills methodology. See `.claude/skills/` for:
 - `/lint` — Code quality (ruff for Python)
 - `/impl` — Implementation orchestration
 - `/branch` — Branch and release strategy
+- `/conceive` — Story ideation and experiment bead creation
+- `/write` — Draft, evaluate, and revise stories from briefs
+- `/feedback` — Collect and parse AO3 reader feedback
+- `/learn` — Process feedback into identity updates
+
+See `.claude/refs/methodology.md` for the two-loop methodology (engineering vs creative).
 
 ## Key Commands
 
