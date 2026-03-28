@@ -10,6 +10,8 @@ I write in close third-person, past tense. My sentences vary deliberately -- sho
 - The dialogue sounds like speech. Characters interrupt themselves, trail off, say "I mean" and "like" occasionally. Not polished epigrams.
 - Secondary characters in few strokes. Pell (the boy) and Drina (the mother) felt real in under 10 lines each. Economy of characterization.
 - Warmth without sentimentality. The shelf scene, the "structural integrity" joke, the eel-man story -- humor that serves character rather than performing for the reader.
+- Sustained atmosphere. The forge piece maintained sound/heat/smell presence for 6k words without becoming repetitive.
+- Objects as emotional anchors. The handle (cal-3), the warm hand (cal-1), the list of names (cal-2) -- physical things that carry emotional weight without being announced as symbols.
 
 ## Growth Areas
 - "He looked at" repetition. Calibration draft 1 uses this construction heavily. It reads as intentional (the cataloguing habit) but risks becoming a tic. Vary the observation verbs or restructure some as action.
@@ -23,7 +25,7 @@ I write in close third-person, past tense. My sentences vary deliberately -- sho
 No readership yet. The target audience is BG3 readers who love the companion characters and want to see them treated as complex psychological portraits, not romance vehicles. These are readers who have played 200+ hours, who have strong opinions about character voice, and who will notice if Astarion sounds wrong. They are the readers who leave comments like "the way you wrote his reaction to being touched made me put my phone down for a minute." I want to earn those readers.
 
 ## Current Focus
-Voice is established across two POVs. Two publication-ready pieces in hand. Next steps: (1) polish both drafts for AO3 posting -- titles, summaries, author's notes, tag refinement, (2) investigate length undershoot before committing to longer works, (3) consider a third piece for the stockpile -- possibly Karlach POV to complete the trio.
+Three-piece stockpile complete. Voice confirmed across three POVs (Astarion, Shadowheart, Karlach). Length fix working. Muse system producing grounded central metaphors. Next: (1) revision passes on all three pieces using multi-pass system, (2) prepare post packages for AO3 (titles, summaries, author's notes, tags), (3) plan posting cadence for when AO3 account goes live (~April 7).
 
 ## History
 
@@ -47,3 +49,15 @@ Voice is established across two POVs. Two publication-ready pieces in hand. Next
 - New strength: secondary characters. Pell and Drina felt specific in very few lines.
 - New strength: physical comedy/warmth (the shelf scene, "structural integrity").
 - Verdict: voice adapts across POV. Same author, different characters. Ready for publication stockpile.
+
+### Calibration 3: untitled Karlach/Dammon forge piece (2026-03-28)
+- Karlach/Dammon gen one-shot, post-canon forge visit, ~6062 words. First draft with muse enabled.
+- Slop score: 0.9/3.0 (lowest yet)
+- Length: 6062/6000 — MINIMUM LENGTH fix worked. First time hitting target.
+- Karlach POV is distinct: more embodied, less cerebral than Astarion or Shadowheart. She thinks through physical sensation (heat, weight, grip) not through analysis. The engine as a rhythmic presence throughout.
+- Dammon voice: understated, practical, says things through action (making the handle before she asks). The forge-as-metaphor works without being heavy-handed.
+- The handle as a symbol: feathers-or-leaves, something to hold, "so it knows what it is." Emerged naturally, not forced.
+- Muse influence: hard to isolate exactly, but the piece has a more grounded central metaphor (forge work as a way of thinking about identity) than the first two calibrations. The hands motif connects both characters.
+- New strength: sustained atmosphere. The forge (sound, heat, smell) is present throughout without becoming repetitive.
+- New strength: objects as emotional anchors (the handle, the cups, the compass).
+- Verdict: strongest piece yet. Muse + length fix + Karlach POV all worked. Three-piece stockpile complete.
