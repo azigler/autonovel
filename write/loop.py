@@ -294,7 +294,10 @@ def muse_depth_notes(
 # ---------------------------------------------------------------------------
 
 
-def run(brief: StoryBrief) -> WriteLoopState:
+def run(
+    brief: StoryBrief,
+    runs_dir: str | Path = DEFAULT_RUNS_DIR,
+) -> WriteLoopState:
     """Run the full write loop from a story brief.
 
     Creates a new run, progresses through all states, and returns
@@ -302,6 +305,7 @@ def run(brief: StoryBrief) -> WriteLoopState:
 
     Args:
         brief: The story brief describing what to write.
+        runs_dir: Directory for run state persistence (default: write/runs).
 
     Returns:
         The final WriteLoopState.
@@ -315,7 +319,7 @@ def run(brief: StoryBrief) -> WriteLoopState:
         updated_at=now,
     )
 
-    return _run_from_state(state)
+    return _run_from_state(state, runs_dir=Path(runs_dir))
 
 
 def resume(
@@ -343,12 +347,15 @@ def resume(
         state.error_from = None
         state.error_detail = None
 
-    return _run_from_state(state)
+    return _run_from_state(state, runs_dir=Path(runs_dir))
 
 
-def _run_from_state(state: WriteLoopState) -> WriteLoopState:
+def _run_from_state(
+    state: WriteLoopState,
+    runs_dir: Path = DEFAULT_RUNS_DIR,
+) -> WriteLoopState:
     """Execute the state machine from the current state until completion or error."""
-    state_path = _get_state_path(state.run_id)
+    state_path = _get_state_path(state.run_id, runs_dir=runs_dir)
     context: dict[str, Any] = {}
     identity: dict[str, Any] = {}
     soul: str = ""
@@ -388,9 +395,9 @@ def _run_from_state(state: WriteLoopState) -> WriteLoopState:
     return state
 
 
-def _get_state_path(run_id: str) -> Path:
+def _get_state_path(run_id: str, runs_dir: Path = DEFAULT_RUNS_DIR) -> Path:
     """Get the state file path for a run."""
-    path = DEFAULT_RUNS_DIR / run_id / "state.json"
+    path = runs_dir / run_id / "state.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     return path
 

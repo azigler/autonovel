@@ -20,6 +20,8 @@ import pytest
 # ---------------------------------------------------------------------------
 pytest.importorskip("write.brief", reason="awaiting write loop implementation")
 
+from api.models import PublishRequest, Rating
+from identity.schema import VoicePriors
 from write.brief import StoryBrief, validate_brief
 from write.context import assemble_context, estimate_tokens
 from write.evaluate_fanfic import evaluate_gate
@@ -37,9 +39,6 @@ from write.revision import (
     generate_revision_brief,
 )
 from write.state import WriteLoopState, load_state, save_state
-
-from api.models import PublishRequest, Rating
-from identity.schema import VoicePriors
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -213,7 +212,7 @@ class TestTC01HappyPathOneShot:
     """
 
     def test_state_progression(
-        self, basic_brief, mock_identity, passing_scores
+        self, basic_brief, mock_identity, passing_scores, tmp_path
     ):
         """State machine progresses BRIEF -> CONTEXT -> DRAFT -> EVALUATE (pass)
         -> PREPARE -> QUEUE -> DONE."""
@@ -237,14 +236,14 @@ class TestTC01HappyPathOneShot:
                 body="<p>Luna walked...</p>",
                 author_notes="Thanks for reading!",
             )
-            state = run(basic_brief)
+            state = run(basic_brief, runs_dir=tmp_path)
 
         assert state.state == "DONE" or state.state == "QUEUE"
         assert state.queue_id is not None
         assert state.run_id is not None
 
     def test_queue_item_returned(
-        self, basic_brief, mock_identity, passing_scores
+        self, basic_brief, mock_identity, passing_scores, tmp_path
     ):
         """QueueItem with status pending is returned after QUEUE state."""
         with (
@@ -264,7 +263,7 @@ class TestTC01HappyPathOneShot:
                 rating=Rating.GENERAL,
                 body="<p>Luna walked...</p>",
             )
-            state = run(basic_brief)
+            state = run(basic_brief, runs_dir=tmp_path)
 
         assert state.queue_id == "q-abc-123"
 
@@ -276,7 +275,7 @@ class TestTC02ReviseAndPass:
     """
 
     def test_revision_loop_fires_on_quality_fail(
-        self, basic_brief, mock_identity, quality_failing_scores, passing_scores
+        self, basic_brief, mock_identity, quality_failing_scores, passing_scores, tmp_path
     ):
         """EVALUATE -> REVISE (count=1) -> EVALUATE (pass) -> PREPARE.
         evaluation_history has 2 entries."""
@@ -313,7 +312,7 @@ class TestTC02ReviseAndPass:
                 rating=Rating.GENERAL,
                 body="<p>Revised.</p>",
             )
-            state = run(basic_brief)
+            state = run(basic_brief, runs_dir=tmp_path)
 
         assert len(state.evaluation_history) == 2
         assert state.revision_count >= 1
@@ -327,7 +326,7 @@ class TestTC03MaxRevisionsExhausted:
     """
 
     def test_max_revisions_reached_flag(
-        self, basic_brief, mock_identity, quality_failing_scores
+        self, basic_brief, mock_identity, quality_failing_scores, tmp_path
     ):
         """After 3 revision cycles that all fail, state has
         max_revisions_reached=True and a warning."""
@@ -357,7 +356,7 @@ class TestTC03MaxRevisionsExhausted:
                 rating=Rating.GENERAL,
                 body="<p>Still bad.</p>",
             )
-            state = run(basic_brief)
+            state = run(basic_brief, runs_dir=tmp_path)
 
         assert state.max_revisions_reached is True
         assert state.revision_count == 3
@@ -371,7 +370,7 @@ class TestTC04AntiSlopHardGateForcesRevision:
     """
 
     def test_slop_fail_triggers_revision(
-        self, basic_brief, mock_identity, slop_failing_scores, passing_scores
+        self, basic_brief, mock_identity, slop_failing_scores, passing_scores, tmp_path
     ):
         """EVALUATE returns SLOP_FAIL, transitions to REVISE. After revision,
         slop_penalty < 3.0."""
@@ -411,7 +410,7 @@ class TestTC04AntiSlopHardGateForcesRevision:
                 rating=Rating.GENERAL,
                 body="<p>Clean.</p>",
             )
-            state = run(basic_brief)
+            state = run(basic_brief, runs_dir=tmp_path)
 
         assert state.evaluation_history[0]["slop_penalty"] >= 3.0
         assert state.gate_result == "PASS"
@@ -595,7 +594,7 @@ class TestTC10OneShotVsMultiChapter:
     """
 
     def test_one_shot_single_draft_call(
-        self, basic_brief, mock_identity, passing_scores
+        self, basic_brief, mock_identity, passing_scores, tmp_path
     ):
         """One-shot brief produces a single draft call."""
         draft_calls = []
@@ -621,13 +620,13 @@ class TestTC10OneShotVsMultiChapter:
                 rating=Rating.GENERAL,
                 body="<p>One-shot.</p>",
             )
-            state = run(basic_brief)
+            state = run(basic_brief, runs_dir=tmp_path)
 
         assert len(draft_calls) == 1
         assert len(state.draft_chapters) == 1
 
     def test_multi_chapter_derives_chapter_count(
-        self, multi_chapter_brief, mock_identity, passing_scores
+        self, multi_chapter_brief, mock_identity, passing_scores, tmp_path
     ):
         """Multi-chapter brief with target_length=40000 produces 10 chapter calls
         (40000 // 4000 = 10)."""
@@ -654,7 +653,7 @@ class TestTC10OneShotVsMultiChapter:
                 rating=Rating.TEEN,
                 body="<p>Multi chapter.</p>",
             )
-            state = run(multi_chapter_brief)
+            state = run(multi_chapter_brief, runs_dir=tmp_path)
 
         expected_chapters = 40000 // 4000  # = 10
         assert len(draft_calls) == expected_chapters
@@ -774,7 +773,7 @@ class TestTC13ExperimentBeadCreated:
         assert len(bead_id) > 0
 
     def test_experiment_bead_id_stored_in_state(
-        self, basic_brief, mock_identity, passing_scores
+        self, basic_brief, mock_identity, passing_scores, tmp_path
     ):
         """experiment_bead_id is stored in state after BRIEF."""
         with (
@@ -794,7 +793,7 @@ class TestTC13ExperimentBeadCreated:
                 rating=Rating.GENERAL,
                 body="<p>Test.</p>",
             )
-            state = run(basic_brief)
+            state = run(basic_brief, runs_dir=tmp_path)
 
         assert state.experiment_bead_id == "bd-exp-002"
 
@@ -806,7 +805,7 @@ class TestTC14ExperimentBeadUpdatedAtDone:
     """
 
     def test_experiment_closed_with_results(
-        self, basic_brief, mock_identity, passing_scores
+        self, basic_brief, mock_identity, passing_scores, tmp_path
     ):
         """At DONE, the experiment bead is updated with scores, revision count,
         outcome, and a learned summary. Bead is closed."""
@@ -832,7 +831,7 @@ class TestTC14ExperimentBeadUpdatedAtDone:
                 rating=Rating.GENERAL,
                 body="<p>Test.</p>",
             )
-            state = run(basic_brief)
+            state = run(basic_brief, runs_dir=tmp_path)
 
         assert len(close_calls) >= 1
         assert state.final_scores is not None
@@ -887,7 +886,7 @@ class TestTC15InvalidBrief:
             )
         assert "premise" in str(exc_info.value).lower()
 
-    def test_invalid_brief_transitions_to_error(self):
+    def test_invalid_brief_transitions_to_error(self, tmp_path):
         """State transitions to ERROR with validation details; no drafting occurs."""
         bad_brief = StoryBrief(
             fandom="",
@@ -903,7 +902,7 @@ class TestTC15InvalidBrief:
             patch("write.loop.close_experiment"),
             patch("write.loop.draft_chapter") as mock_draft,
         ):
-            state = run(bad_brief)
+            state = run(bad_brief, runs_dir=tmp_path)
 
         assert state.state == "ERROR"
         assert state.error_detail is not None
@@ -917,7 +916,7 @@ class TestTC16QueueHumanReview:
     """
 
     def test_queue_status_pending_after_post(
-        self, basic_brief, mock_identity, passing_scores
+        self, basic_brief, mock_identity, passing_scores, tmp_path
     ):
         """QueueItem status is pending after POST /works."""
         with (
@@ -937,7 +936,7 @@ class TestTC16QueueHumanReview:
                 rating=Rating.GENERAL,
                 body="<p>Draft.</p>",
             )
-            state = run(basic_brief)
+            state = run(basic_brief, runs_dir=tmp_path)
 
         assert state.queue_id == "q-human-001"
 
@@ -1437,7 +1436,7 @@ class TestEdgeCases:
         assert estimate_tokens("") == 0
 
     def test_error_api_failure_during_queue(
-        self, basic_brief, mock_identity, passing_scores
+        self, basic_brief, mock_identity, passing_scores, tmp_path
     ):
         """ERROR: API failure during QUEUE transitions to ERROR state."""
         with (
@@ -1459,12 +1458,12 @@ class TestEdgeCases:
                 rating=Rating.GENERAL,
                 body="<p>Draft.</p>",
             )
-            state = run(basic_brief)
+            state = run(basic_brief, runs_dir=tmp_path)
 
         assert state.state == "ERROR"
         assert state.error_from == "QUEUE"
 
-    def test_error_api_failure_during_draft(self, basic_brief, mock_identity):
+    def test_error_api_failure_during_draft(self, basic_brief, mock_identity, tmp_path):
         """ERROR: API failure during DRAFT transitions to ERROR state."""
         with (
             patch("write.loop.load_identity", return_value=mock_identity),
@@ -1477,13 +1476,13 @@ class TestEdgeCases:
                 side_effect=TimeoutError("Model timeout"),
             ),
         ):
-            state = run(basic_brief)
+            state = run(basic_brief, runs_dir=tmp_path)
 
         assert state.state == "ERROR"
         assert state.error_from == "DRAFT"
 
     def test_edge_revision_count_never_exceeds_max(
-        self, basic_brief, mock_identity, quality_failing_scores
+        self, basic_brief, mock_identity, quality_failing_scores, tmp_path
     ):
         """EDGE: revision_count never goes above max_revisions (3)."""
         with (
@@ -1507,12 +1506,12 @@ class TestEdgeCases:
                 rating=Rating.GENERAL,
                 body="<p>Revised.</p>",
             )
-            state = run(basic_brief)
+            state = run(basic_brief, runs_dir=tmp_path)
 
         assert state.revision_count <= 3
 
     def test_edge_multi_chapter_continuity_threading(
-        self, multi_chapter_brief, mock_identity, passing_scores
+        self, multi_chapter_brief, mock_identity, passing_scores, tmp_path
     ):
         """EDGE: Multi-chapter drafting passes previous chapter tail to next call."""
         draft_args = []
@@ -1538,12 +1537,12 @@ class TestEdgeCases:
                 rating=Rating.TEEN,
                 body="<p>Multi chapter.</p>",
             )
-            _state = run(multi_chapter_brief)
+            _state = run(multi_chapter_brief, runs_dir=tmp_path)
 
         # After the first chapter, subsequent calls should receive previous chapter context
         assert len(draft_args) > 1
 
-    def test_error_identity_missing_transitions_to_error(self, basic_brief):
+    def test_error_identity_missing_transitions_to_error(self, basic_brief, tmp_path):
         """ERROR: Missing identity files cause ERROR transition at CONTEXT state."""
         with (
             patch(
@@ -1555,7 +1554,7 @@ class TestEdgeCases:
             ),
             patch("write.loop.close_experiment"),
         ):
-            state = run(basic_brief)
+            state = run(basic_brief, runs_dir=tmp_path)
 
         assert state.state == "ERROR"
         assert state.error_from == "CONTEXT"
@@ -1589,7 +1588,7 @@ class TestEdgeCases:
                 rating=Rating.GENERAL,
                 body="<p>Draft.</p>",
             )
-            run(basic_brief)
+            run(basic_brief, runs_dir=tmp_path)
 
         # State should be saved at least once per major transition
         assert len(state_writes) >= 4

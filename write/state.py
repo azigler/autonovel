@@ -61,8 +61,20 @@ class WriteLoopState:
     length_retry_count: int = 0
 
 
-def save_state(state: WriteLoopState, path: str | Path) -> None:
-    """Persist WriteLoopState to a JSON file."""
+def save_state(
+    state: WriteLoopState,
+    path: str | Path,
+    runs_dir: str | Path | None = None,
+) -> None:
+    """Persist WriteLoopState to a JSON file.
+
+    Args:
+        state: The state to persist.
+        path: Explicit file path for the state JSON.
+        runs_dir: If provided, overrides path to ``runs_dir/<run_id>/state.json``.
+    """
+    if runs_dir is not None:
+        path = Path(runs_dir) / state.run_id / "state.json"
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     data = _state_to_dict(state)
