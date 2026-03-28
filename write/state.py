@@ -53,6 +53,11 @@ class WriteLoopState:
     # Warnings
     warnings: list[str] = field(default_factory=list)
 
+    # Run metadata (human-readable naming)
+    run_name: str | None = None
+    brief_path: str | None = None
+    experiment_bead: str | None = None
+
     # Muse and config (added by soul-and-muse spec)
     pre_draft_seeds: list[str] = field(default_factory=list)
     mid_revision_notes: list[str] = field(default_factory=list)
