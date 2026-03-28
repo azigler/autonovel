@@ -348,11 +348,12 @@ def run(
         brief_path=brief_path,
     )
 
-    state = _run_from_state(state, runs_dir=Path(runs_dir))
+    _runs_dir = Path(runs_dir)
+    state = _run_from_state(state, runs_dir=_runs_dir)
 
     # After completion, extract prose into draft.md --------------------
     if state.state == "DONE":
-        _write_draft_md(state)
+        _write_draft_md(state, runs_dir=_runs_dir)
 
     return state
 
@@ -437,12 +438,14 @@ def _get_state_path(run_id: str, runs_dir: Path = DEFAULT_RUNS_DIR) -> Path:
     return path
 
 
-def _write_draft_md(state: WriteLoopState) -> None:
+def _write_draft_md(
+    state: WriteLoopState, runs_dir: Path = DEFAULT_RUNS_DIR
+) -> None:
     """Extract prose from a completed run into ``draft.md`` with YAML frontmatter."""
     if not state.draft_chapters:
         return
 
-    run_dir = DEFAULT_RUNS_DIR / state.run_id
+    run_dir = runs_dir / state.run_id
     run_dir.mkdir(parents=True, exist_ok=True)
 
     prose = "\n\n".join(state.draft_chapters)
