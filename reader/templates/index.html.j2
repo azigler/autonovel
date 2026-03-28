@@ -10,7 +10,7 @@
 <body>
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h2>autonovel</h2>
+            <h2><a href="/" class="home-link" id="home-link">autonovel</a></h2>
             <button type="button" id="theme-toggle" title="Toggle dark/light mode">&#9789;</button>
         </div>
 
@@ -71,10 +71,29 @@
     </aside>
 
     <main class="content" id="content">
+        {% if show_home %}
+        <div class="homepage" id="homepage">
+            <header class="home-header">
+                <h1 class="home-title">Experiment Journal</h1>
+                <p class="home-subtitle">Voice calibration and creative experiments, chronicled.</p>
+            </header>
+            <div class="home-loading" id="home-loading">
+                <p class="loading-text">Gathering experiment data...</p>
+            </div>
+            <div id="timeline-container" style="display:none;">
+                <section class="timeline-section" id="experiment-timeline"></section>
+                <section class="recent-section" id="recent-changes">
+                    <h2 class="section-heading">Recent Changes</h2>
+                    <div id="recent-commits-list"></div>
+                </section>
+            </div>
+        </div>
+        {% else %}
         <div class="welcome">
             <h1>Autonovel Reader</h1>
             <p>Browse the project. Click any file in the sidebar to view it.</p>
         </div>
+        {% endif %}
     </main>
 
     <script src="/static/app.js"></script>
