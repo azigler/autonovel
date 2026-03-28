@@ -446,6 +446,300 @@ body {
   text-align: center;
 }
 
+/* === Home Link === */
+.home-link {
+  color: var(--text);
+  text-decoration: none;
+}
+.home-link:hover {
+  color: var(--accent);
+}
+
+/* === Homepage === */
+.homepage {
+  max-width: 68ch;
+}
+
+.home-header {
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.home-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.4rem;
+  color: var(--text);
+}
+
+.home-subtitle {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.home-loading {
+  padding: 3rem 0;
+}
+
+.loading-text {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+.section-heading {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.2rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* === Experiment Entry (journal-style) === */
+.experiment-entry {
+  margin-bottom: 2.25rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.experiment-entry:last-child {
+  border-bottom: none;
+}
+
+.entry-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.entry-bead-id {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.entry-status {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-weight: 600;
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+}
+
+.entry-status-open {
+  background: var(--badge-open);
+  color: var(--badge-open-text);
+}
+.entry-status-closed {
+  background: var(--badge-closed);
+  color: var(--badge-closed-text);
+}
+.entry-status-in_progress,
+.entry-status-in-progress {
+  background: var(--badge-in-progress);
+  color: var(--badge-in-progress-text);
+}
+
+.entry-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.1rem;
+  font-weight: 400;
+  margin-bottom: 0.6rem;
+  color: var(--text);
+}
+
+.entry-description {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 0.8rem;
+  white-space: pre-line;
+}
+
+/* Run details within an experiment entry */
+.entry-run {
+  margin: 0.8rem 0;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--border);
+  background: var(--code-bg);
+  border-radius: 0 4px 4px 0;
+}
+
+.entry-run-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: 0.95rem;
+  margin-bottom: 0.4rem;
+  color: var(--text);
+}
+
+.entry-run-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 1rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+
+.entry-run-links {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  margin-top: 0.4rem;
+}
+
+.entry-run-links a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.entry-run-links a:hover {
+  text-decoration: underline;
+}
+
+/* Commits within an experiment */
+.entry-commits {
+  margin-top: 0.6rem;
+}
+
+.entry-commits-toggle {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.entry-commits-toggle:hover {
+  color: var(--accent);
+}
+
+.entry-commits-list {
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+  font-family: "SF Mono", "Fira Code", monospace;
+  line-height: 1.6;
+}
+
+.commit-line {
+  padding: 0.1rem 0;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.commit-sha {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.commit-subject {
+  color: var(--text);
+}
+
+.commit-files {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  padding-left: 1rem;
+  margin-bottom: 0.2rem;
+}
+
+.commit-file-link {
+  color: var(--accent);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.commit-file-link:hover {
+  text-decoration: underline;
+}
+
+/* Identity changes callout */
+.identity-changes {
+  margin-top: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.identity-changes span {
+  font-style: italic;
+}
+
+.identity-file-link {
+  color: var(--accent);
+  text-decoration: none;
+  cursor: pointer;
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.75rem;
+}
+
+.identity-file-link:hover {
+  text-decoration: underline;
+}
+
+/* === Recent Changes Section === */
+.recent-section {
+  margin-top: 3rem;
+}
+
+.recent-commit {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.82rem;
+}
+
+.recent-commit:last-child {
+  border-bottom: none;
+}
+
+.recent-commit-header {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.recent-commit-date {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.recent-commit-sha {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.recent-commit-subject {
+  color: var(--text);
+}
+
+.recent-commit-files {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  padding-left: 1rem;
+  margin-top: 0.15rem;
+  font-family: "SF Mono", "Fira Code", monospace;
+}
+
 /* === Responsive === */
 @media (max-width: 768px) {
   .sidebar {
@@ -457,5 +751,8 @@ body {
   .content {
     margin-left: 0;
     padding: 1rem;
+  }
+  .homepage {
+    max-width: 100%;
   }
 }

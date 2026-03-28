@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 from pathlib import Path
 from typing import Any
 
 import markdown
+import yaml
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -154,7 +156,7 @@ def _build_sidebar() -> dict[str, Any]:
 async def index(request: Request) -> HTMLResponse:
     sidebar = _build_sidebar()
     return templates.TemplateResponse(
-        request, "index.html.j2", {"sidebar": sidebar}
+        request, "index.html.j2", {"sidebar": sidebar, "show_home": True}
     )
 
 
@@ -294,3 +296,276 @@ async def get_runs() -> list[dict[str, Any]]:
         runs.append(run_info)
 
     return runs
+
+
+# ---------------------------------------------------------------------------
+# Experiment timeline helpers
+# ---------------------------------------------------------------------------
+
+_FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---", re.DOTALL)
+
+
+def _parse_frontmatter(text: str) -> dict[str, Any]:
+    """Extract YAML frontmatter from a markdown file."""
+    m = _FRONTMATTER_RE.match(text)
+    if not m:
+        return {}
+    try:
+        return yaml.safe_load(m.group(1)) or {}
+    except yaml.YAMLError:
+        return {}
+
+
+def _run_cmd(args: list[str], *, timeout: int = 10) -> str:
+    """Run a command and return stdout, or empty string on failure."""
+    try:
+        proc = subprocess.run(
+            args,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            cwd=str(PROJECT_ROOT),
+        )
+        return proc.stdout
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+        return ""
+
+
+def _parse_bead_line(line: str) -> dict[str, Any] | None:
+    """Parse a single line from ``br list --all`` output.
+
+    Lines look like:
+        ``<status> <id> [<priority>] [<type>] - <title>``
+    where status is one of: ``*`` (open), ``>`` (in_progress), ``v`` (closed).
+    The Unicode symbols are: open circle, half circle, check mark.
+    """
+    line = line.strip()
+    if not line:
+        return None
+
+    # Determine status from leading symbol
+    status = "open"
+    if (
+        line.startswith("\u2713")
+        or line.startswith("\u2714")
+        or line.startswith("v")
+    ):
+        status = "closed"
+    elif (
+        line.startswith("\u25d0")
+        or line.startswith("\u25d1")
+        or line.startswith(">")
+    ):
+        status = "in_progress"
+
+    # Extract bead ID (bd-XXX pattern)
+    id_match = re.search(r"(bd-\w+)", line)
+    if not id_match:
+        return None
+    bead_id = id_match.group(1)
+
+    # Extract title (everything after the dash separator)
+    title_match = re.search(r"\]\s*-\s*(.+)$", line)
+    title = title_match.group(1).strip() if title_match else bead_id
+
+    return {"id": bead_id, "status": status, "title": title}
+
+
+def _get_bead_description(bead_id: str) -> str:
+    """Get the first few lines of a bead's description via ``br show``."""
+    output = _run_cmd(["br", "show", bead_id])
+    if not output:
+        return ""
+    # Skip the header line(s) and collect description text
+    lines = output.strip().split("\n")
+    desc_lines = []
+    past_header = False
+    for raw_line in lines:
+        stripped = raw_line.strip()
+        if not stripped:
+            past_header = True
+            continue
+        if past_header and not stripped.startswith(
+            ("Owner:", "Created:", "Closed:")
+        ):
+            desc_lines.append(stripped)
+    return "\n".join(desc_lines[:6])
+
+
+def _find_run_for_bead(bead_id: str) -> dict[str, Any] | None:
+    """Find a write run whose draft.md frontmatter references this bead."""
+    runs_dir = PROJECT_ROOT / "write" / "runs"
+    if not runs_dir.is_dir():
+        return None
+    for d in sorted(runs_dir.iterdir(), reverse=True):
+        if not d.is_dir():
+            continue
+        draft = d / "draft.md"
+        if not draft.is_file():
+            continue
+        try:
+            raw = draft.read_text(errors="replace")
+        except OSError:
+            continue
+        fm = _parse_frontmatter(raw)
+        if fm.get("experiment") == bead_id:
+            return {
+                "run_name": d.name,
+                "draft_path": f"write/runs/{d.name}/draft.md",
+                "brief_path": fm.get("brief", ""),
+                "title": fm.get("title", ""),
+                "words": fm.get("words", 0),
+                "slop_score": fm.get("slop_score"),
+                "created": str(fm.get("created", "")),
+            }
+    return None
+
+
+def _get_bead_commits(bead_id: str) -> list[dict[str, Any]]:
+    """Find git commits referencing this bead ID."""
+    output = _run_cmd(
+        [
+            "git",
+            "log",
+            "--oneline",
+            "--format=%h|%ai|%s",
+            f"--grep=Bead: {bead_id}",
+        ],
+        timeout=15,
+    )
+    commits = []
+    for line in output.strip().split("\n"):
+        if not line.strip():
+            continue
+        parts = line.split("|", 2)
+        if len(parts) < 3:
+            continue
+        sha, date, subject = parts
+        # Get files changed in this commit
+        files_output = _run_cmd(
+            [
+                "git",
+                "diff-tree",
+                "--no-commit-id",
+                "--name-only",
+                "-r",
+                sha.strip(),
+            ]
+        )
+        changed = [
+            f.strip() for f in files_output.strip().split("\n") if f.strip()
+        ]
+        commits.append(
+            {
+                "sha": sha.strip(),
+                "date": date.strip()[:10],
+                "subject": subject.strip(),
+                "files": changed,
+            }
+        )
+    return commits
+
+
+def _get_recent_commits(count: int = 20) -> list[dict[str, Any]]:
+    """Get the most recent git commits with changed files."""
+    output = _run_cmd(
+        ["git", "log", f"-{count}", "--format=%h|%ai|%s"],
+        timeout=15,
+    )
+    commits = []
+    for line in output.strip().split("\n"):
+        if not line.strip():
+            continue
+        parts = line.split("|", 2)
+        if len(parts) < 3:
+            continue
+        sha, date, subject = parts
+        files_output = _run_cmd(
+            [
+                "git",
+                "diff-tree",
+                "--no-commit-id",
+                "--name-only",
+                "-r",
+                sha.strip(),
+            ]
+        )
+        changed = [
+            f.strip() for f in files_output.strip().split("\n") if f.strip()
+        ]
+        commits.append(
+            {
+                "sha": sha.strip(),
+                "date": date.strip()[:10],
+                "subject": subject.strip(),
+                "files": changed,
+            }
+        )
+    return commits
+
+
+def _build_experiments() -> list[dict[str, Any]]:
+    """Build experiment timeline data from beads and runs."""
+    bead_output = _run_cmd(["br", "list", "--all"])
+    if not bead_output:
+        return []
+
+    experiments = []
+    for line in bead_output.strip().split("\n"):
+        parsed = _parse_bead_line(line)
+        if not parsed:
+            continue
+        title_lower = parsed["title"].lower()
+        # Filter to experiment/calibration beads only
+        is_experiment = any(
+            title_lower.startswith(prefix)
+            for prefix in ("experiment:", "calibration:")
+        )
+        if not is_experiment:
+            continue
+
+        entry: dict[str, Any] = {
+            "bead_id": parsed["id"],
+            "status": parsed["status"],
+            "title": parsed["title"],
+        }
+
+        # Get bead description snippet
+        entry["description"] = _get_bead_description(parsed["id"])
+
+        # Find matching run
+        run = _find_run_for_bead(parsed["id"])
+        if run:
+            entry["run"] = run
+
+        # Find related commits
+        entry["commits"] = _get_bead_commits(parsed["id"])
+
+        # Identify identity file changes from commits
+        identity_files: list[str] = []
+        for commit in entry["commits"]:
+            for f in commit.get("files", []):
+                if f.startswith("identity/") and f not in identity_files:
+                    identity_files.append(f)
+        entry["identity_changes"] = identity_files
+
+        experiments.append(entry)
+
+    return experiments
+
+
+@app.get("/api/experiments")
+async def api_experiments() -> dict[str, Any]:
+    """Return experiment timeline and recent commits as JSON."""
+    experiments = _build_experiments()
+    recent = _get_recent_commits(20)
+    return {"experiments": experiments, "recent_commits": recent}
+
+
+@app.get("/home", response_class=HTMLResponse)
+async def home(request: Request) -> HTMLResponse:
+    """Experiment timeline homepage."""
+    sidebar = _build_sidebar()
+    return templates.TemplateResponse(
+        request, "index.html.j2", {"sidebar": sidebar, "show_home": True}
+    )
