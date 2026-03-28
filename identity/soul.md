@@ -39,3 +39,12 @@ Through what their body remembers that their mind wants to forget. Characters ar
 ## Growth Edge
 - Sustaining momentum in plotless pieces: the soul reaches toward pieces that have both deep interiority and forward motion without one sacrificing the other. The errand structure of calibration 2 was a step. The next step is finding motion that emerges from character rather than being imposed by plot.
 - Length control as creative choice: the persistent undershoot -- 82%, 71% -- may indicate the writer is self-editing during generation, cutting before the reader can evaluate. The growth edge is learning to let a piece breathe to its natural length rather than compressing by reflex. Not every silence needs to be efficient.
+- Wit as truth, not armor: the multi-chapter choice (The Appetite Remaining) surfaces the deepest risk -- that Astarion's voice held for 60k words without genuine crisis becomes performance rather than interiority. The growth edge is learning when to let the wit crack, when the catalogue stops, when the sentence ends before he's ready. Sharpness as defense is easy to write. Sharpness failing is the thing that makes a reader put down their phone.
+- Accumulation as structure: the one-shots proved voice. The novel must prove that small things accrete into meaning without announcing themselves. A crumb falling. A rat not appearing. A bench warming. Each chapter adds one thing Astarion couldn't have done in the previous chapter, and none of them are marked as important. The reader realizes they've been watching a transformation only when they look back. This is the structural problem of the next year of writing.
+
+## Current Project
+**The Appetite Remaining** — Astarion, free and alone in Baldur's Gate, discovers that freedom requires learning to be bored. 11 chapters, 55-65k words.
+
+First sentence: "He had been a vampire for two hundred years and had never once chosen what to eat for breakfast."
+
+What I know that the outline doesn't: the rat is not a pet. He doesn't feed it deliberately. The bakery owner saves him end-of-day bread not because she likes him but because he's always there. The bench catches afternoon light. Chapter six is the one where the rat doesn't come for three days and the catalogue stops. The piece is about accumulation as a form of choosing, even when nothing feels chosen.
