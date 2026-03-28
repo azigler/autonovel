@@ -1,0 +1,20 @@
+{
+  "fandom": "Baldur's Gate (Video Games)",
+  "characters": ["Karlach (Baldur's Gate)", "Dammon (Baldur's Gate)"],
+  "premise": "Post-Act 3. Karlach goes back to Dammon's forge. Not because the engine needs fixing — there's nothing left to fix, they both know that — but because she's been walking past the forge every day for a week and today she finally goes in. Dammon is working. She watches him work. A conversation about hands — his are burned and calloused from the forge, hers run too hot to hold anything delicate for long. He's making something she didn't ask for. She's trying to figure out how to say she's afraid of what happens when the engine stops, without actually saying it. The forge is loud enough to hide in.",
+  "target_length": 6000,
+  "rating": "General Audiences",
+  "tags_hint": [
+    "Post-Canon",
+    "Character Study",
+    "Gen",
+    "Karlach (Baldur's Gate) Has Feelings",
+    "Dammon (Baldur's Gate)",
+    "Found Family",
+    "Mortality",
+    "The Engine",
+    "Introspection"
+  ],
+  "format": "one_shot",
+  "experiment_hypothesis": "First draft with muse system engaged. Test whether creative seeds produce noticeably different/deeper output. Karlach POV completes the companion trio. Also testing length enforcement fix (MINIMUM LENGTH prompt). Karlach interiority should be more physical and direct than Astarion/Shadowheart — less cerebral, more embodied."
+}
