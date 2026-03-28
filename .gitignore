@@ -10,8 +10,8 @@ typeset/*.pdf
 typeset/chapters_content.tex
 *.pdf
 
-# Write loop run state
-write/runs/
+# Write loop run state (keep draft.md, ignore transient state)
+write/runs/*/state.json
 publish_queue/
 api/cache/
 
