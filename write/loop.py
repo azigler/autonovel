@@ -294,8 +294,22 @@ def muse_depth_notes(
 # ---------------------------------------------------------------------------
 
 
+def _unique_run_name(base: str, runs_dir: Path = DEFAULT_RUNS_DIR) -> str:
+    """Return *base* if no directory exists, otherwise append _v2, _v3, etc."""
+    if not (runs_dir / base).exists():
+        return base
+    for n in range(2, 1000):
+        candidate = f"{base}_v{n}"
+        if not (runs_dir / candidate).exists():
+            return candidate
+    return f"{base}_{uuid.uuid4().hex[:6]}"
+
+
 def run(
     brief: StoryBrief,
+    *,
+    run_name: str | None = None,
+    brief_path: str | None = None,
     runs_dir: str | Path = DEFAULT_RUNS_DIR,
 ) -> WriteLoopState:
     """Run the full write loop from a story brief.
@@ -305,21 +319,42 @@ def run(
 
     Args:
         brief: The story brief describing what to write.
+        run_name: Human-readable run directory name. If *None*, falls back
+            to ``Path(brief_path).stem`` when *brief_path* is given, or a
+            UUID otherwise.
+        brief_path: Path to the brief JSON file (stored in state for
+            provenance).
         runs_dir: Directory for run state persistence (default: write/runs).
 
     Returns:
         The final WriteLoopState.
     """
+    # Derive run_name --------------------------------------------------
+    if run_name is None and brief_path is not None:
+        run_name = Path(brief_path).stem
+    if run_name is not None:
+        run_name = _unique_run_name(run_name)
+    else:
+        run_name = str(uuid.uuid4())
+
     now = datetime.now(UTC).isoformat()
     state = WriteLoopState(
-        run_id=str(uuid.uuid4()),
+        run_id=run_name,
         state="BRIEF",
         brief=brief,
         created_at=now,
         updated_at=now,
+        run_name=run_name,
+        brief_path=brief_path,
     )
 
-    return _run_from_state(state, runs_dir=Path(runs_dir))
+    state = _run_from_state(state, runs_dir=Path(runs_dir))
+
+    # After completion, extract prose into draft.md --------------------
+    if state.state == "DONE":
+        _write_draft_md(state)
+
+    return state
 
 
 def resume(
@@ -402,6 +437,44 @@ def _get_state_path(run_id: str, runs_dir: Path = DEFAULT_RUNS_DIR) -> Path:
     return path
 
 
+def _write_draft_md(state: WriteLoopState) -> None:
+    """Extract prose from a completed run into ``draft.md`` with YAML frontmatter."""
+    if not state.draft_chapters:
+        return
+
+    run_dir = DEFAULT_RUNS_DIR / state.run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    prose = "\n\n".join(state.draft_chapters)
+    word_count = len(prose.split())
+
+    # Pull slop_score from final evaluation if available
+    slop_score: float | str = "n/a"
+    if state.final_scores is not None:
+        slop_score = state.final_scores.get("slop_penalty", "n/a")
+
+    bead_id = state.experiment_bead or state.experiment_bead_id or "none"
+    brief_path = state.brief_path or "unknown"
+    run_name = state.run_name or state.run_id
+    created = state.updated_at or datetime.now(UTC).isoformat()
+
+    frontmatter = (
+        "---\n"
+        f"experiment: {bead_id}\n"
+        f"brief: {brief_path}\n"
+        f"run: {run_name}\n"
+        f'title: "TBD"\n'
+        f"words: {word_count}\n"
+        f"slop_score: {slop_score}\n"
+        f"created: {created}\n"
+        "---\n"
+    )
+
+    draft_path = run_dir / "draft.md"
+    draft_path.write_text(frontmatter + "\n" + prose, encoding="utf-8")
+    logger.info("Wrote draft.md to %s (%d words)", draft_path, word_count)
+
+
 # ---------------------------------------------------------------------------
 # State step functions
 # ---------------------------------------------------------------------------
@@ -434,6 +507,7 @@ def _step_brief(state: WriteLoopState) -> WriteLoopState:
         hypothesis=hypothesis,
     )
     state.experiment_bead_id = bead_id
+    state.experiment_bead = bead_id
 
     state.state = "CONTEXT"
     return state

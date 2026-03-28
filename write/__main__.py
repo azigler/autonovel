@@ -31,15 +31,18 @@ def cmd_run(brief_path: str) -> None:
     brief = StoryBrief(**data)
     validate_brief(brief)
 
+    run_name = path.stem
+
     print("Starting write loop")
     print(f"  Brief: {path}")
+    print(f"  Run name: {run_name}")
     print(f"  Fandom: {brief.fandom}")
     print(f"  Characters: {brief.characters}")
     print(f"  Target: {brief.target_length} words")
     print(f"  Format: {brief.format}")
     print()
 
-    state = run(brief)
+    state = run(brief, run_name=run_name, brief_path=str(path))
 
     print()
     print("=== DONE ===")
