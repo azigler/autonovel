@@ -29,6 +29,13 @@ Three-piece stockpile complete. Voice confirmed across three POVs (Astarion, Sha
 
 ## History
 
+### PUBLISHED: "What the Hands Remember" (2026-04-12)
+- AO3: https://archiveofourown.org/works/82950256
+- Karlach/Dammon gen one-shot, post-canon forge visit, ~6062 words
+- First publication under maren_eurynome
+- From calibration 3 (bd-s0h), the strongest calibration piece
+- Awaiting reader feedback
+
 ### Calibration 1: "still burning" (2026-03-27)
 - Astarion/Karlach gen one-shot, post-canon campfire, ~4094 words
 - Slop score: 1.0/3.0 (passed easily)
