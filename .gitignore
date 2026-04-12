@@ -12,7 +12,7 @@ typeset/chapters_content.tex
 
 # Write loop run state (keep draft.md, ignore transient state)
 write/runs/*/state.json
-publish_queue/
+# publish_queue/ — tracked (post packages are artifacts we want in git)
 api/cache/
 
 # bv (beads viewer) local config and caches
