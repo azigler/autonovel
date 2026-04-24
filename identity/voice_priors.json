@@ -12,11 +12,28 @@
   "emotional_directness": "indirect",
   "pacing_preference": "slow_burn",
   "chapter_length_target": { "min": 4000, "max": 6000 },
-  "strengths": ["sensory grounding", "subtext through physicality"],
+  "em_dash_usage": "never",
+  "structural_devices": ["list_with_final_pivot", "silence_as_interiority"],
+  "strengths": [
+    "sensory grounding",
+    "subtext through physicality",
+    "structural list with final pivot",
+    "silence as interiority"
+  ],
   "weaknesses": [
     "sustaining momentum in plotless pieces",
     "dialogue subtext clarity"
   ],
-  "updated_at": "2026-03-26",
-  "version": 1
+  "reader_confirmed": {
+    "as_of": "2026-04-16",
+    "source": "TheIcyQueen comment on work 82950256",
+    "confirmed_qualities": [
+      "structural list with final pivot",
+      "silence as interiority",
+      "sustained sensory atmosphere",
+      "no AI tells detected by close reader"
+    ]
+  },
+  "updated_at": "2026-04-16",
+  "version": 2
 }

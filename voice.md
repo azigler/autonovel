@@ -95,8 +95,12 @@ sections are long because they need to be. Some are two lines.
 **Hedge parade**: "may," "might," "could potentially," "it's possible
 that" -- pick one per page, max. State things or don't.
 
-**Em dash overload**: One or two per page is fine. Five per paragraph
-is a dead giveaway. Use commas, parentheses, or two sentences instead.
+**Em dashes**: Do not use them. Zero per page in pen-name-published
+work (fic body, author's notes, summaries, comment replies). Even
+one or two reads as AI to fandom-trained eyes. Use commas, parentheses,
+or two sentences instead. This is stricter than the general "overload"
+rule because reader-feedback on the first published work flagged em
+dashes as a dead giveaway. Confirmed 2026-04-16.
 
 **List abuse**: Prose, not bullets. If the scene calls for a list
 (a merchant's inventory, a spell's components), earn it. Don't

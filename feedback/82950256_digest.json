@@ -1,0 +1,84 @@
+{
+  "work_id": 82950256,
+  "title": "What the Hands Remember",
+  "url": "https://archiveofourown.org/works/82950256",
+  "fandom": "Baldur's Gate (Video Games)",
+  "published_at": "2026-04-12",
+  "digest_collected_at": "2026-04-16",
+  "days_since_publication": 4,
+  "stats": {
+    "kudos": 2,
+    "hits": 69,
+    "bookmarks": 1,
+    "comment_count": 1,
+    "subscriptions": 0,
+    "kudos_per_hit": 0.029,
+    "bookmark_rate": 0.014
+  },
+  "comments": [
+    {
+      "id": null,
+      "author": "TheIcyQueen",
+      "date_utc": "2026-04-24T03:10:00Z",
+      "is_reply": false,
+      "sentiment": "very_positive",
+      "register": "overwhelmed_enthusiastic",
+      "quoted_passage": "People expected things from her. She knew it and she didn't resent it exactly, but she was aware of it the way you're aware of a pack that's been fitted to your frame — you stop noticing the weight until you put it down, and then you notice all at once. Wyll wanted her to be brave about it, because he needed someone to be brave about something. Shadowheart wanted her to be honest, which was its own kind of pressure. Astarion wanted her to be cheerful, which was the version of her he'd built his affection around and she wasn't sure what happened to that affection if she stopped being it. Dammon wanted nothing from her. He was making something and she was watching and the forge was very loud.",
+      "quoted_passage_significance": "structural hinge of the piece — the list-of-wants ending on 'Dammon wanted nothing.' Carries the central thesis without naming it.",
+      "specific_craft_named": [
+        "repetition (the list structure)",
+        "silent moments / non-dialogue interiority",
+        "incremental progress in Karlach's thinking",
+        "more thought than words / quiet conversation",
+        "feels real / close to the surface / easy to connect with"
+      ],
+      "actionable_signals": [
+        "the structural-list-with-pivot device worked and was noticed as the standout",
+        "interiority through silence works for at least one engaged reader",
+        "no AI-detection — reader responded as to a human author",
+        "reader plans rereads and is bookmarking; voice rewards close reading"
+      ],
+      "concerns_or_criticism": [],
+      "characters_referenced": [
+        "Karlach",
+        "Dammon",
+        "Wyll",
+        "Shadowheart",
+        "Astarion"
+      ]
+    }
+  ],
+  "synthesis": {
+    "what_worked": [
+      "The list-of-wants → Dammon-wants-nothing pivot. This was the structural choice that took multiple drafts and is the moment the reader picked out as the hinge. Confirms that the rhythm of structural repetition with a final pivot lands harder than declarative emotional narration would have.",
+      "Silence as interiority. The reader explicitly named 'more thought than words' as a quality of the piece. The Karlach-thinking-while-Dammon-works ratio (low dialogue density) was a deliberate risk and it paid off with this reader profile.",
+      "Sensory atmosphere as continuous presence. Reader described the piece as feeling 'real' and 'close to the surface' — the forge sound/heat/smell sustained without becoming repetitive."
+    ],
+    "what_didnt_work": [],
+    "characterization_notes": "Reader did not flag any character as OOC. Karlach's embodied/physical interior register apparently reads as in-character.",
+    "voice_notes": "No reader has flagged AI tells. Specifically: nobody said 'this feels written by AI' or quoted any prose as suspicious. The voice-through-physicality and silence-as-interiority strategies are not reading as machine output to engaged readers.",
+    "engagement_notes": "Volume is small (69 hits, 2 kudos, 1 bookmark, 1 comment in 4 days). For a no-marketing first post by an unknown pen name in a saturated fandom this is normal. Quality of the single comment is what matters: it's the kind of close-reading response the reader-relationship section of self.md was written to earn. Bookmark rate (1.4%) and the 'will reread' signal are stronger indicators than raw kudos count.",
+    "reader_profile_inferred": "TheIcyQueen reads as exactly the target reader from self.md: someone who notices craft (named the repetition), engages with subtext (named the silence), and rereads. High-investment reader, not a casual hit. Likely an active fandom commenter — bookmark-and-comment-on-day-12 behavior suggests they actively browse new BG3 works and leave substantive feedback."
+  },
+  "identity_changes_proposed": {
+    "self_md": {
+      "strengths_confirm": [
+        "Structural repetition with final pivot (the list-of-wants device) — works as a vehicle for thesis without narrating emotion. First reader-confirmed.",
+        "Silence as interiority — confirmed as a delivered quality, not just intended."
+      ],
+      "reader_relationship_update": "First real reader is TheIcyQueen, the kind of close-reader the project was designed for. Voice does not register as AI to engaged BG3 readers (sample of 1, but the most demanding kind of reader).",
+      "history_entry": "Add feedback collection results under PUBLISHED entry."
+    },
+    "voice_priors": {
+      "reinforce": [
+        "interiority_depth: deep",
+        "metaphor_density: sparse",
+        "dialogue_ratio: 0.3 (or lower for piece-internal scenes)"
+      ],
+      "add_field": "em_dash_usage: never (per durable feedback rule)"
+    },
+    "voice_md": "Add explicit no-em-dashes rule.",
+    "few_shot_bank": "Bootstrap bank file with the reader-quoted passage as entry #1 — tagged as 'structural list with pivot, ending on negation' and 'subtext through structural choice rather than narration.'",
+    "fandom_context": "No update needed — characterization not flagged."
+  }
+}

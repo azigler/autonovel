@@ -17,3 +17,6 @@ api/cache/
 
 # bv (beads viewer) local config and caches
 .bv/
+
+# br (beads-rust) local backup history
+.beads/.br_history/
