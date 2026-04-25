@@ -163,6 +163,31 @@ def _int_text(tag: Tag | None) -> int:
         return 0
 
 
+def _parse_comment_date(posted_tag: Tag | None) -> datetime | None:
+    """Parse AO3's structured comment date.
+
+    AO3 renders comment dates as nested tags (span.date, abbr.month,
+    span.year, span.time, abbr.timezone) rather than a single strptime-able
+    string. Example values: date=24, month="Apr", year=2026, time="03:10AM",
+    timezone="UTC".
+    """
+    if posted_tag is None:
+        return None
+    day = _text(posted_tag.find("span", class_="date"))
+    month = _text(posted_tag.find("abbr", class_="month"))
+    year = _text(posted_tag.find("span", class_="year"))
+    time_str = _text(posted_tag.find("span", class_="time"))
+    if not (day and month and year and time_str):
+        return None
+    try:
+        parsed = datetime.strptime(
+            f"{day} {month} {year} {time_str}", "%d %b %Y %I:%M%p"
+        )
+    except ValueError:
+        return None
+    return parsed.replace(tzinfo=UTC)
+
+
 def _parse_work_blurb(blurb: Tag) -> WorkSummary | None:
     """Parse a work blurb from a listing page."""
     heading = blurb.find("h4", class_="heading")
@@ -498,14 +523,20 @@ def get_user_stats(username: str) -> UserStats | None:
 
 
 def get_comments(work_id: int, chapter_id: int | None = None) -> list[Comment]:
-    """Get comments on a work (optionally filtered to one chapter)."""
+    """Get comments on a work (optionally filtered to one chapter).
+
+    AO3's `/works/{id}/comments` page is a shell that loads comments
+    asynchronously from `/comments/show_comments?work_id={id}`. The shell
+    contains zero `li.comment` elements even when comments exist, so we
+    hit the AJAX endpoint directly.
+    """
     cache_id = f"comments:{work_id}:{chapter_id}"
     cached = _cache_get("comments", cache_id, _TTL_COMMENTS)
     if cached is not None:
         return [Comment.model_validate(c) for c in cached]
 
     try:
-        soup = _get(f"/works/{work_id}/comments")
+        soup = _get("/comments/show_comments", {"work_id": str(work_id)})
     except httpx.HTTPStatusError:
         return []
 
@@ -520,14 +551,7 @@ def get_comments(work_id: int, chapter_id: int | None = None) -> list[Comment]:
         byline = li.find("h4", class_="heading")
         author = _text(byline.find("a") if byline else None)
 
-        date_tag = li.find("span", class_="posted")
-        date_str = _text(date_tag)
-        try:
-            cdate = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S %Z").replace(
-                tzinfo=UTC
-            )
-        except (ValueError, TypeError):
-            cdate = None
+        cdate = _parse_comment_date(li.find("span", class_="posted"))
 
         body_div = li.find("blockquote", class_="userstuff")
         body = _text(body_div)
