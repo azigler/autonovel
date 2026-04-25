@@ -4,6 +4,12 @@ description: Generate a story idea and create an experiment bead for it
 argument-hint: "[fandom] [type]"
 ---
 
+## Execution
+
+This is an in-session skill. The orchestrator runs every step directly using Read, Write, Edit, and Bash tools. **Do not add a Python tool or call the Anthropic API for /conceive** — that defeats the harness's whole point. The agent already has identity files, fandom context, and bead state on disk; reading them directly is more reliable than shoveling them through prompt strings.
+
+If you find yourself wanting to write `conceive.py`, stop. The skill is the spec; the orchestrator is the runtime.
+
 # /conceive - Story Ideation
 
 Generate a story idea based on the agent's identity, fandom context, reader feedback,

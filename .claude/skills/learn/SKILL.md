@@ -4,6 +4,12 @@ description: Process reader feedback into identity updates and close the experim
 argument-hint: "[bead-id]"
 ---
 
+## Execution
+
+This is an in-session skill. The orchestrator runs every step directly using Read, Write, Edit, and Bash tools. **Do not add a Python tool or call the Anthropic API for /learn** — that defeats the harness's whole point. Identity-file updates are surgical in-place edits to `identity/self.md`, `identity/voice_priors.json`, and the few-shot bank; they are not generated content. The orchestrator's reasoning over the digest IS the learning step.
+
+If you find yourself wanting to write `learn.py`, stop. The skill is the spec; the orchestrator is the runtime.
+
 # /learn - Update Identity from Feedback
 
 Process a feedback digest into concrete identity changes. This is where the agent
