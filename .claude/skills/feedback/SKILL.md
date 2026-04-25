@@ -4,6 +4,12 @@ description: Collect and parse reader feedback from AO3 for a published work
 argument-hint: "[work-id or url]"
 ---
 
+## Execution
+
+This is an in-session skill. The orchestrator runs every step directly using Read, Write, Edit, and Bash tools. **Do not add a Python tool or call the Anthropic API for /feedback** — that defeats the harness's whole point. AO3 reads go through `api/ao3_client.py` (httpx, not anthropic) and that's fine; the skill itself — synthesizing the digest, parsing comments into structured feedback — is in-session reasoning over files the orchestrator already has open.
+
+If you find yourself wanting to write `feedback.py` that imports `anthropic`, stop. The skill is the spec; the orchestrator is the runtime.
+
 # /feedback - Collect Reader Feedback
 
 Scrape AO3 metrics and parse comments for a published work. Generate a feedback

@@ -84,3 +84,17 @@ uv run python <script>.py  # Run any tool
 
 4. **The agent learns from real readers, not from itself.** Self-evaluation is
    a bootstrap. The real gradient comes from AO3 engagement metrics and comments.
+
+## API Token Usage
+
+Direct Anthropic SDK calls are justified in **exactly one place**: the unattended prose-generation loop in `write/` (draft, muse seeds, revision passes). The model needs a clean system prompt to embody the pen-name author voice without Claude Code's assistant persona leaking in.
+
+Everything else runs in-session through the Claude Code harness:
+
+- `/conceive` — read identity files, write a brief. No API call.
+- `/feedback` — scrape AO3 metrics (httpx, not Anthropic), parse comments, write digest. No API call.
+- `/learn` — read digest, edit identity files in place. No API call.
+
+If you're tempted to add a Python tool that calls `anthropic` for any of these, you're recreating costly shadow infrastructure that the harness already provides for free on the Max plan. Update the SKILL.md instead.
+
+The 17 root-level autonovel novel-pipeline scripts (`gen_*.py`, `build_*.py`, `run_pipeline.py`, etc.) all call the API directly but are unused by the fanfic loop. They're slated for cleanup in a followup bead. See `.claude/refs/api-vs-harness.md` for the full audit.
