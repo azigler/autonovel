@@ -1,0 +1,22 @@
+{
+  "fandom": "Baldur's Gate (Video Games)",
+  "characters": ["Astarion (Baldur's Gate)"],
+  "premise": "Chapter 2 of The Appetite Remaining ('Inventory'). A few days after ch01. Astarion sets out to furnish the room and approaches it as a tactical problem: what does a person who lives in a place require. He acquires a chair, a rug, candles, more books. The acquired objects sit in the room without settling, like furniture in a house that hasn't been lived in yet. He catches himself arranging things for an imagined visitor who is not coming. He walks past a solicitor's office on his errands and registers it without remarking — the kind of place that handles dissolution of criminal estates, paperwork, boring, filed under: not relevant. The seven crumbs from ch01 are still on the floor near the window where he left them; he does not sweep them up. A small grey movement at the edge of his vision twice during the chapter, both times in peripheral, both times unexamined. Ends with him sitting in the new chair, history of the Sword Coast open on his lap, the cake from the outline (an unnecessary purchase, dusted with sugar) on the table beside him uneaten. Season: late summer becoming early autumn — the light at the horizon doing something he doesn't have a category for yet. Tone: continues ch01's register — sharp surface, exhausted underneath, threat-assessment habit running in the background. The structural-list-with-pivot device should appear at least once: a list of things he is supposed to want ending on a pivot to one thing he doesn't know he wants. No em dashes anywhere — use commas, periods, parentheses, or restructure. Length 5000-5500.",
+  "target_length": 5200,
+  "rating": "Teen And Up Audiences",
+  "tags_hint": [
+    "Post-Canon",
+    "Character Study",
+    "Spawn Astarion",
+    "Astarion-centric",
+    "Freedom",
+    "Slow Build",
+    "No Romance",
+    "Introspection",
+    "Domesticity",
+    "Aftermath"
+  ],
+  "format": "multi_chapter",
+  "chapter_count": 11,
+  "experiment_hypothesis": "Tests whether the voice holds across chapters with continuity requirements (the seven crumbs from ch01 must still be on the floor, the rented-room geography must match, the cataloguing-as-default-mode must persist) without becoming repetitive. Also tests two reader-confirmed devices in the wild for the first time: the structural-list-with-pivot device (entry 001 in identity/few_shot_bank.md) used as a thesis-delivery mechanism, and the no-em-dashes rule applied at draft time rather than as a post-hoc sweep. Plants three foreshadowing threads from briefs/appetite_remaining_outline.md: the rat (peripheral grey, twice, unexamined), the solicitor's office (in passing, dismissed), the bench (not yet found, but the tendency to sit on warm stone surfaces is implicit). Targets the outline's stated 'thing he couldn't do before': buying a book he doesn't intend to read immediately, putting it face-down on the chair, coming back to it later."
+}

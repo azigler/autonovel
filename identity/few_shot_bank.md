@@ -32,3 +32,63 @@ or plot, so the bank is reusable across pieces.
 - A character is processing pressure from multiple sources and the relief comes from one source removing itself from the pattern.
 - The thesis of a scene is comparative — what's different about *this* relationship versus the others.
 - Declarative emotional narration would feel cheap; the structural rhythm carries the feeling instead.
+
+---
+
+## Entry 002
+
+**Source:** "still burning" (calibration 1, write/runs/calibration_1/draft.md), drafted 2026-03-27
+**POV:** Astarion (with Karlach in dialogue)
+**Validated by:** Internal evaluation. Slop score 1.0/3.0. Self.md flagged warmth-without-sentimentality and "dialogue sounds like speech" as strengths here. Not reader-validated yet (piece not published), but this is the passage Cal-1 was built around and remains the strongest demonstration of the device.
+
+**Devices demonstrated:**
+- Collaborative metaphor-building through dialogue. One character offers a physical image ("arms still out"); the other extends it ("and someone asks what you're holding"); the first lands it ("you have to say nothing, and it sounds wrong"). Neither owns the metaphor alone — it's built line-by-line. The emotional experience is shared without being named.
+- Physical action as punctuation, not decoration. "She held her arms slightly away from her body, demonstrating" and "She lowered her arms" mark the beginning and end of the metaphor. The body carries the emotional arc that the words are skirting around.
+- Single-word responses that do real work. "Yeah." is the whole emotional resolution of the exchange — agreement, recognition, being-seen-without-having-to-say-more.
+- Restraint around the question's origin. Astarion never says "you too?" He says "And someone asks what you're holding." The shared-ness is implicit. Both characters knowing without requiring either to declare.
+
+**The passage:**
+
+> "Yeah," she said. "Like you've been carrying something so long your arms just keep being out." She held her arms slightly away from her body, demonstrating. "And you put it down and you're standing there like an idiot with your arms out."
+>
+> "And someone asks what you're holding."
+>
+> "And you have to say *nothing,* and it sounds wrong." She lowered her arms. "Yeah."
+
+**Note:** Reproduced with no em-dashes (the source has none in this exact passage). Other parts of Cal-1 use em-dashes and would need scrubbing before being promoted to the bank.
+
+**When to reach for this device:**
+- Two characters with parallel-but-different experiences of the same kind of loss or weight, and the scene needs to acknowledge the overlap without either of them volunteering their own story first.
+- When a single character's monologue would flatten the moment; the collaborative back-and-forth makes both characters active participants rather than speaker-and-listener.
+- When you want to end on recognition rather than resolution. The device works because it doesn't resolve — it names.
+
+---
+
+## Entry 003
+
+**Source:** "untitled (Shadowheart errand)" (calibration 2, write/runs/calibration_2_shadowheart/draft.md), drafted 2026-03-27
+**POV:** Shadowheart
+**Validated by:** Internal evaluation. Slop score 1.3/3.0. Self.md flagged "POV adaptation confirmed — Shadowheart interiority is distinct from Astarion's: compartmentalizes, reaches for absent prayers, drier wit." This passage is where that distinction lives most clearly. Not reader-validated yet.
+
+**Devices demonstrated:**
+- Body memory of a former way of being the character has chosen to leave, rendered as a physical groping action that finds nothing. The body reaches; the world has been rearranged; the reach is the old shape still in the muscle. This is how interiority-through-physicality works without narrating emotion directly.
+- The "grooved into her like a path worn into stone" image. Architecture as metaphor for internalized behavior — specifically, a path made by repetition rather than designed. Character-specific (Shadowheart's Sharran grooves) but the device generalizes.
+- The small lurch "like a step that ended before she expected it to." Tiny embodied failure standing in for a large interior failure. Proprioceptive metaphor — about the body's spatial expectations, not a visual image.
+- The two-move pattern: the character catches themselves in the old behavior, then has to decide how to describe what just happened. The description is where the character's current relationship to their past shows.
+
+**The passage:**
+
+> She caught herself reaching for the familiar internal address, the particular shape of a prayer, the way her thoughts would organize themselves around an invocation before she was fully conscious of doing it. The muscle memory of faith. She had done it a hundred times in the past month and each time there was the same small lurch, like a step that ended before she expected it to.
+>
+> Not hers. Not anymore. Or, not right, rather. The prayers to Shar were still there, grooved into her like a path worn into stone, but they led somewhere she had chosen to leave. She wasn't sure yet what replaced them.
+
+And in dialogue, a few lines later:
+
+> "I keep reaching for it. Shar's liturgy. Before I've thought about it. And then I catch myself and it's like reaching for a door and finding a wall. Which is what I chose. But the reaching keeps happening."
+
+**Note:** The source draft contains em-dashes (Cal-2 predates the no-em-dashes rule established 2026-04-16). Reproduced here with em-dashes replaced by commas and periods, per the bank's exemplar-quality rule.
+
+**When to reach for this device:**
+- A character in transition between selves (leaving a faith, leaving a role, leaving a relationship) where the body hasn't updated yet and catches itself executing the old pattern.
+- When the character's current relationship to the thing they've left is ambivalent — they chose to leave, but they're allowed to also find the old shape comforting or orienting, and the prose shouldn't punish that ambivalence.
+- Pairs well with a dialogue exchange that makes the private image speakable. Entry 002's collaborative-metaphor device can extend this one: first the interior groping, then a conversation that lets someone else witness it.
