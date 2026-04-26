@@ -12,52 +12,55 @@ own fanbase, using a pen name, WITHOUT looking like AI writing.
 
 ```
 .beads/              — Task tracking (beads-rust)
-.claude/             — Claude Code config, skills, hooks, refs
-  skills/            — Development skills (commit, beads, lint, impl, etc.)
-  refs/              — PLAN.md and reference documents
+.claude/             — Claude Code config (project-local skills + hooks)
+  skills/            — Project-local skills: conceive, write, feedback, learn, daily
 hooks/               — Claude Code hook scripts
+refs/                — Reference docs (PLAN.md, api-vs-harness.md, etc.)
 
-# --- autonovel core (novel-writing pipeline) ---
-*.py                 — 27 Python tools (drafting, evaluation, revision, etc.)
-CRAFT.md             — Narrative craft frameworks
-ANTI-SLOP.md         — AI tell detection (word-level)
-ANTI-PATTERNS.md     — AI tell detection (structural)
-voice.md             — Voice guardrails template
-program.md           — Agent instructions per phase
-PIPELINE.md          — Full pipeline specification
-WORKFLOW.md          — Human-friendly step-by-step guide
+# --- agentic author (the active fanfic loop) ---
+write/               — Pure prompt builders + thin coordinator (post bd-75p)
+  prompts.py         — Every prose / muse / revision prompt builder; no API calls
+  loop.py            — setup_run, draft.md export; no state machine, no API
+  brief.py, context.py, evaluate_fanfic.py, prepare.py, state.py, revision.py, muse.py
+identity/            — self.md, soul.md, voice priors, fandom_context, few_shot_bank
+publish/             — AO3 post preparation packages
+feedback/            — Metrics, comments, digests
+api/                 — AO3 client (httpx, NOT anthropic) + proxy
+tests/               — pytest suite covering write/, identity/, api/
+
+# --- dormant autonovel novel pipeline (slated for deletion in bd-pqb) ---
+*.py                 — 27 root-level scripts (gen_*.py, build_*.py, run_pipeline.py, ...)
+                       ALL still import the Anthropic SDK directly.
+                       UNUSED by the fanfic loop. See refs/api-vs-harness.md.
+CRAFT.md, ANTI-SLOP.md, ANTI-PATTERNS.md  — slop / craft references (kept; cross-loop)
+voice.md, program.md, PIPELINE.md, WORKFLOW.md  — novel-pipeline docs (slated for cleanup)
 typeset/             — LaTeX typesetting
-
-# --- agentic author (new, being built) ---
-identity/            — self.md, pen name, voice priors, inspirations
-publish/             — AO3 post preparation, formatting, tag generation
-feedback/            — Metrics scraping, comment parsing, engagement tracking
-learning/            — Prompt evolution, few-shot bank, eval weight adjustment
-strategy/            — What to write next, series planning, fandom analysis
 ```
 
 ## Tech Stack
 
 - **Runtime:** Python (uv for dependency management)
-- **AI:** Claude API (Anthropic) — Sonnet for writing, Opus for evaluation
+- **AI:** Claude Code in-harness subagents (no direct Anthropic SDK calls;
+  see API Token Usage below)
 - **Platform:** AO3 (Archive of Our Own) — human-in-the-loop posting
 - **Task Tracking:** beads-rust (`br`)
 - **Hooks:** Claude Code hooks for lint, commit checks, session management
 
 ## Development Workflow
 
-This project uses lb-skills methodology. See `.claude/skills/` for:
-- `/commit` — Gitmoji commit conventions with bead trailers
-- `/beads` — Task tracking (one bead = one commit)
-- `/lint` — Code quality (ruff for Python)
-- `/impl` — Implementation orchestration
-- `/branch` — Branch and release strategy
-- `/conceive` — Story ideation and experiment bead creation
-- `/write` — Draft, evaluate, and revise stories from briefs
-- `/feedback` — Collect and parse AO3 reader feedback
-- `/learn` — Process feedback into identity updates
+Global skills are at `~/.claude/skills/` (commit, beads, lint, impl, spec,
+test, check, fix, triage, housekeeping, dispatch, handoff, orchestrator,
+loop, schedule, ssot, zig-voice, etc.). Project-local skills under
+`.claude/skills/` are the agentic-author rituals:
 
-See `.claude/refs/methodology.md` for the two-loop methodology (engineering vs creative).
+- `/conceive` — Story ideation; writes `briefs/{slug}.json`, opens experiment bead
+- `/write` — Drive draft → eval → revise → prepare via in-harness subagents
+- `/feedback` — Scrape AO3 metrics + comments; write digest
+- `/learn` — Process digest into identity-file updates; close experiment bead
+- `/daily` — One iteration of the autonomous rhythm loop (morning pages,
+  mail, one small task, EOD note). Self-paced; deep work NOT on the loop.
+
+See `refs/methodology.md` for the two-loop methodology (engineering vs creative).
 
 ## Key Commands
 
