@@ -84,3 +84,28 @@ uv run python <script>.py  # Run any tool
 
 4. **The agent learns from real readers, not from itself.** Self-evaluation is
    a bootstrap. The real gradient comes from AO3 engagement metrics and comments.
+
+## API Token Usage
+
+As of bd-75p (2026-04-26), the fanfic loop has **zero direct Anthropic SDK
+consumers**. Every skill runs in-harness through the Claude Code session:
+
+- `/conceive` — read identity files, write a brief. No API call.
+- `/write` — orchestrator dispatches in-harness subagents for draft / muse /
+  revision using the prompt builders in `write/prompts.py`. The
+  persona-suppression wrappers (`wrap_for_subagent`,
+  `wrap_for_subagent_structured`) keep Claude Code's assistant persona from
+  leaking into the prose. No direct API call.
+- `/feedback` — scrape AO3 metrics (httpx, not Anthropic), parse comments,
+  write digest. No API call.
+- `/learn` — read digest, edit identity files in place. No API call.
+
+If you're tempted to add a Python tool that imports `anthropic` for any of
+these, you're recreating costly shadow infrastructure that the harness
+already provides for free on the Max plan. Update the SKILL.md instead, or
+add a builder to `write/prompts.py` and dispatch a subagent.
+
+The 17 root-level autonovel novel-pipeline scripts (`gen_*.py`,
+`build_*.py`, `run_pipeline.py`, etc.) all call the API directly but are
+unused by the fanfic loop. They're slated for cleanup in a followup bead.
+See `refs/api-vs-harness.md` for the full audit and migration record.
