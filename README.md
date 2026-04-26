@@ -10,9 +10,11 @@ The agent must develop all of these -- and it must never look like AI writing, o
 the fanbase will turn on it.
 
 Built on top of [autonovel](https://github.com/erhnysr/autonovel), an autonomous
-novel-writing pipeline (27 Python tools for drafting, evaluation, revision,
-typesetting, and audiobook generation). The writing engine provides the foundation;
-the agentic layer adds identity, publishing, feedback, and learning.
+novel-writing pipeline. The fanfic agent reuses the slop-detection core
+(`evaluate.py:slop_score`) and the craft / anti-pattern reference docs;
+the rest of the original novel-pipeline scripts have been retired in
+favor of the in-harness fanfic write loop. The agentic layer adds
+identity, publishing, feedback, and learning on top.
 
 ---
 
@@ -75,14 +77,10 @@ specs/               -- Authoritative technical specifications (see below)
 tests/               -- Test suite
 
 # --- autonovel engine (writing foundation) ---
-*.py                 -- 27 Python tools (drafting, evaluation, revision, etc.)
+evaluate.py          -- Mechanical slop detection (slop_score + tier banks)
 CRAFT.md             -- Narrative craft frameworks (plot, character, world, prose)
 ANTI-SLOP.md         -- Word-level AI tell detection
 ANTI-PATTERNS.md     -- Structural AI pattern detection
-voice.md             -- Voice guardrails template
-program.md           -- Agent instructions per pipeline phase
-PIPELINE.md          -- Full pipeline specification
-WORKFLOW.md          -- Step-by-step human guide
 typeset/             -- LaTeX typesetting and ePub generation
 
 # --- configuration ---
@@ -104,9 +102,6 @@ Three specs serve as the authoritative technical documentation:
 
 For the two-loop methodology (engineering vs creative), see
 [.claude/refs/methodology.md](.claude/refs/methodology.md).
-
-For the underlying writing engine, see [PIPELINE.md](PIPELINE.md) and
-[WORKFLOW.md](WORKFLOW.md).
 
 ---
 
@@ -193,14 +188,12 @@ lower-stakes one-shots to calibrate before committing to multi-chapter series.
 
 ## How It Connects to autonovel
 
-The autonovel pipeline (27 Python scripts for novel generation) provides the
-writing engine: drafting, evaluation, revision, anti-slop detection, voice
-fingerprinting, and craft frameworks. The agentic layer wraps this engine with
-identity, publishing, feedback collection, and learning -- turning a one-shot
-novel pipeline into a continuously improving author.
-
-For the engine internals, see [PIPELINE.md](PIPELINE.md) and the tool table in
-[WORKFLOW.md](WORKFLOW.md).
+The autonovel pipeline originally shipped 27 Python scripts for end-to-end
+novel generation. The fanfic agent kept what generalizes -- mechanical slop
+detection (`evaluate.py:slop_score`), the craft frameworks (`CRAFT.md`), and
+the AI-tell databases (`ANTI-SLOP.md`, `ANTI-PATTERNS.md`) -- and replaced
+the bespoke per-novel CLI tools with an in-harness write loop (`write/`)
+that operates from a `StoryBrief` instead of a fixed directory layout.
 
 ---
 

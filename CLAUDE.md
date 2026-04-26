@@ -28,12 +28,11 @@ feedback/            — Metrics, comments, digests
 api/                 — AO3 client (httpx, NOT anthropic) + proxy
 tests/               — pytest suite covering write/, identity/, api/
 
-# --- dormant autonovel novel pipeline (slated for deletion in bd-pqb) ---
-*.py                 — 27 root-level scripts (gen_*.py, build_*.py, run_pipeline.py, ...)
-                       ALL still import the Anthropic SDK directly.
-                       UNUSED by the fanfic loop. See refs/api-vs-harness.md.
-CRAFT.md, ANTI-SLOP.md, ANTI-PATTERNS.md  — slop / craft references (kept; cross-loop)
-voice.md, program.md, PIPELINE.md, WORKFLOW.md  — novel-pipeline docs (slated for cleanup)
+# --- shared craft / slop references ---
+evaluate.py          — Mechanical slop detection (slop_score + tier banks)
+CRAFT.md             — Narrative craft frameworks
+ANTI-SLOP.md         — AI tell detection (word-level)
+ANTI-PATTERNS.md     — AI tell detection (structural)
 typeset/             — LaTeX typesetting
 ```
 
@@ -108,7 +107,7 @@ these, you're recreating costly shadow infrastructure that the harness
 already provides for free on the Max plan. Update the SKILL.md instead, or
 add a builder to `write/prompts.py` and dispatch a subagent.
 
-The 17 root-level autonovel novel-pipeline scripts (`gen_*.py`,
-`build_*.py`, `run_pipeline.py`, etc.) all call the API directly but are
-unused by the fanfic loop. They're slated for cleanup in a followup bead.
-See `refs/api-vs-harness.md` for the full audit and migration record.
+As of bd-pqb (2026-04-26), the 26 dormant autonovel novel-pipeline scripts
+(gen_*.py, build_*.py, run_pipeline.py, etc.) have been deleted. Only
+`evaluate.py` remains at the root — its `slop_score` is shared across
+loops. See `refs/api-vs-harness.md` for the historical audit.
