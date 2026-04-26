@@ -127,8 +127,6 @@ def _build_sidebar() -> dict[str, Any]:
         "CRAFT.md",
         "ANTI-SLOP.md",
         "ANTI-PATTERNS.md",
-        "PIPELINE.md",
-        "WORKFLOW.md",
     ]
     for f in docs_files:
         p = PROJECT_ROOT / f

@@ -17,15 +17,11 @@ own fanbase, using a pen name, WITHOUT looking like AI writing.
   refs/              — PLAN.md and reference documents
 hooks/               — Claude Code hook scripts
 
-# --- autonovel core (novel-writing pipeline) ---
-*.py                 — 27 Python tools (drafting, evaluation, revision, etc.)
+# --- autonovel core (slop detection + craft refs) ---
+evaluate.py          — Mechanical slop detection (slop_score + tier banks)
 CRAFT.md             — Narrative craft frameworks
 ANTI-SLOP.md         — AI tell detection (word-level)
 ANTI-PATTERNS.md     — AI tell detection (structural)
-voice.md             — Voice guardrails template
-program.md           — Agent instructions per phase
-PIPELINE.md          — Full pipeline specification
-WORKFLOW.md          — Human-friendly step-by-step guide
 typeset/             — LaTeX typesetting
 
 # --- agentic author (new, being built) ---
