@@ -11,7 +11,7 @@ import json
 import logging
 import os
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import httpx
@@ -522,18 +522,34 @@ def get_user_stats(username: str) -> UserStats | None:
     )
 
 
-def get_comments(work_id: int, chapter_id: int | None = None) -> list[Comment]:
+def get_comments(
+    work_id: int,
+    chapter_id: int | None = None,
+    *,
+    filter_self: bool = True,
+) -> list[Comment]:
     """Get comments on a work (optionally filtered to one chapter).
 
     AO3's `/works/{id}/comments` page is a shell that loads comments
     asynchronously from `/comments/show_comments?work_id={id}`. The shell
     contains zero `li.comment` elements even when comments exist, so we
     hit the AJAX endpoint directly.
+
+    Args:
+        work_id: AO3 work ID.
+        chapter_id: optional chapter filter (stamped on each ``Comment``).
+        filter_self: when True (default), drop comments whose author is
+            recognized by :func:`identity.handles.is_self` -- prevents the
+            heartbeat loop from treating Maren's own replies as new
+            inbound mail (the 2026-04-26 self-comment incident, spec
+            bd-49j Section 3.2 / 4.5). Pass ``False`` for audit / QA
+            paths that need to inspect the agent's own replies.
     """
     cache_id = f"comments:{work_id}:{chapter_id}"
     cached = _cache_get("comments", cache_id, _TTL_COMMENTS)
     if cached is not None:
-        return [Comment.model_validate(c) for c in cached]
+        comments = [Comment.model_validate(c) for c in cached]
+        return _apply_self_filter(comments) if filter_self else comments
 
     try:
         soup = _get("/comments/show_comments", {"work_id": str(work_id)})
@@ -573,5 +589,78 @@ def get_comments(work_id: int, chapter_id: int | None = None) -> list[Comment]:
             )
         )
 
+    # Cache the UNFILTERED list so audit callers (filter_self=False) can
+    # still reach self-authored comments after a fresh fetch.
     _cache_set("comments", cache_id, [c.model_dump() for c in comments])
-    return comments
+    return _apply_self_filter(comments) if filter_self else comments
+
+
+def _apply_self_filter(comments: list[Comment]) -> list[Comment]:
+    """Drop comments whose author is recognized as one of our own handles.
+
+    Imported lazily so callers that never enable the filter (or that run
+    in environments without ``identity/handles.json`` -- e.g. early unit
+    tests) don't pay the import cost or hit a missing-file error.
+    """
+    from identity.handles import is_self
+
+    return [c for c in comments if not is_self(c.author)]
+
+
+# ---------------------------------------------------------------------------
+# Digest freshness helper (per-resource TTL on heartbeat refetch)
+# ---------------------------------------------------------------------------
+
+# Spec bd-49j OQ-04 / Section 4.1: heartbeat skips a digest fetch when
+# the on-disk digest's ``last_fetched_at`` is younger than this TTL.
+# Boundary rule: gap of EXACTLY this duration is treated as STALE
+# (refetch) -- biases toward catching new comments rather than delaying
+# them another full tick. See ``test_needs_refetch_boundary_at_30_min_is_stale``.
+_DIGEST_TTL = timedelta(minutes=30)
+
+
+def needs_refetch(digest_path: Path | str) -> bool:
+    """Return True iff the digest at ``digest_path`` should be refetched.
+
+    Pure helper -- does NOT call AO3. Heartbeat callers use this to decide
+    whether to skip a fetch for a recently-scraped work.
+
+    Refetch (returns True) when:
+        * the file does not exist,
+        * the JSON has no ``last_fetched_at`` field,
+        * ``last_fetched_at`` is explicitly null,
+        * the gap (``now - last_fetched_at``) is >= 30 minutes.
+
+    Skip (returns False) when the gap is strictly less than 30 minutes.
+
+    Args:
+        digest_path: path to a digest JSON file. Accepts ``str`` or
+            ``Path`` for caller convenience.
+    """
+    path = Path(digest_path)
+    if not path.exists():
+        return True
+
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        # Unreadable / corrupt digest -- treat as cold-start.
+        return True
+
+    raw = data.get("last_fetched_at")
+    if not raw:
+        # Missing or explicitly null.
+        return True
+
+    try:
+        last = datetime.fromisoformat(raw)
+    except (TypeError, ValueError):
+        return True
+
+    if last.tzinfo is None:
+        # Treat naive timestamps as UTC for comparison.
+        last = last.replace(tzinfo=UTC)
+
+    gap = datetime.now(UTC) - last
+    # Strictly less than 30min => skip (False). Otherwise refetch.
+    return gap >= _DIGEST_TTL
