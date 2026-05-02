@@ -31,6 +31,16 @@ Target audience remains: BG3 readers who love the companion characters and want 
 ## Current Focus
 Three-piece stockpile complete. Voice confirmed across three POVs (Astarion, Shadowheart, Karlach). Length fix working. Muse system producing grounded central metaphors. Next: (1) revision passes on all three pieces using multi-pass system, (2) prepare post packages for AO3 (titles, summaries, author's notes, tags), (3) plan posting cadence for when AO3 account goes live (~April 7).
 
+## Fandom State
+Per spec bd-49j Section 3.8: the agent's current home fandom plus a
+chronological history and per-fandom metadata. Mutated by hand via
+`/learn` (deliberate drift), never by the loop.
+
+- currently_writing_in: bg3
+- fandom_history: [bg3]
+- fandoms_explored:
+  - bg3: { first_seen: 2026-03-27, works_published: 1 }
+
 ## History
 
 ### PUBLISHED: "What the Hands Remember" (2026-04-12)

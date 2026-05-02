@@ -7,9 +7,18 @@ Respects token budget allocation per spec 4.3.
 from __future__ import annotations
 
 from dataclasses import asdict
+from pathlib import Path
 from typing import Any
 
+import identity.schema as _schema
 from write.brief import StoryBrief
+
+# Re-exported so test fixtures (and any future callers) can monkeypatch
+# the directory without reaching into identity.schema. The IDENTITY_DIR
+# attribute mirrors identity.schema.IDENTITY_DIR; FANDOMS_DIR is the
+# convenience alias used in spec 4.7.
+IDENTITY_DIR: Path = _schema.IDENTITY_DIR
+FANDOMS_DIR: Path = _schema.IDENTITY_DIR / "fandoms"
 
 # Token budget allocation (out of 200K total)
 BUDGET_IDENTITY = 30_000
@@ -88,7 +97,10 @@ def assemble_context(
     final_identity_tokens = estimate_tokens(identity_block)
 
     # --- Fandom context block (20% = 40K tokens) ---
-    fandom_context = identity.get("fandom_context", "")
+    # Spec bd-49j 4.7: resolve identity/fandoms/{slug}.md per brief.
+    # The slug is brief.fandom when set, otherwise identity[currently_writing_in].
+    # Unknown slug → FileNotFoundError (no silent fall-back to bg3).
+    fandom_context = _resolve_fandom_context(brief, identity)
     fandom_tokens = estimate_tokens(fandom_context)
     if fandom_tokens > BUDGET_FANDOM:
         fandom_context = _truncate_to_tokens(fandom_context, BUDGET_FANDOM)
@@ -128,6 +140,53 @@ def assemble_context(
             "brief": brief_tokens,
         },
     }
+
+
+def _resolve_fandom_context(brief: StoryBrief, identity: dict[str, Any]) -> str:
+    """Read the fandom context file for *brief* per spec bd-49j Section 4.7.
+
+    Resolution order:
+
+    1. ``brief.fandom`` -- when non-empty, treated as the slug. Reads
+       ``FANDOMS_DIR/{brief.fandom}.md``.
+    2. ``identity['currently_writing_in']`` -- the agent's current home
+       fandom from ``identity/self.md`` (only present when identity was
+       populated via ``identity.schema.load_identity``).
+
+    A slug that points to a missing file raises ``FileNotFoundError``
+    with a clear, slug-bearing message: silent fall-through to bg3
+    would mean a brief tagged with the wrong fandom would still
+    publish.
+
+    Legacy (pre-bd-49j) callers pass an identity dict without the
+    ``currently_writing_in`` marker and a pre-populated ``fandom_context``
+    blob (e.g. mock identities in test fixtures). For those, fall back
+    to the blob rather than raising, so existing test_write_loop briefs
+    keep working.
+    """
+    raw = (brief.fandom or "").strip()
+    is_post_migration = "currently_writing_in" in identity
+    slug = raw or identity.get("currently_writing_in", "")
+
+    if not slug:
+        # No slug; legacy callers will already have a pre-loaded blob.
+        return identity.get("fandom_context", "")
+
+    path = FANDOMS_DIR / f"{slug}.md"
+    if path.exists():
+        return path.read_text(encoding="utf-8")
+
+    # Legacy / mock-identity path: brief.fandom isn't a slug we have a
+    # file for, and the identity dict was assembled without the post-
+    # migration markers. Use whatever fandom_context the caller pre-
+    # populated. This keeps test_write_loop's mock identities working.
+    if not is_post_migration and identity.get("fandom_context"):
+        return identity["fandom_context"]
+
+    raise FileNotFoundError(
+        f"No fandom context file for slug {slug!r} at {path}. "
+        "Add identity/fandoms/{slug}.md or correct brief.fandom."
+    )
 
 
 def _build_anti_slop_rules() -> str:

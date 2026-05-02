@@ -54,6 +54,18 @@ def identity_dir(tmp_path, monkeypatch):
         if src.is_file():
             shutil.copy2(src, tmp_path / src.name)
 
+    # Post bd-49j Section 4.7: the live identity layout moved to
+    # identity/fandoms/{slug}.md. The pre-bd-49j fixture only copied
+    # top-level files, leaving these tests dependent on a legacy
+    # fandom_context.md at the top level. Stage a back-compat copy at
+    # the old path so iterdir-based unlink() patterns in this file's
+    # tests still work; do NOT mirror identity/fandoms/ itself, so the
+    # "delete all top-level files" test still ends with a clean tmp_path.
+    real_bg3 = _REAL_IDENTITY_DIR / "fandoms" / "bg3.md"
+    legacy = tmp_path / "fandom_context.md"
+    if real_bg3.is_file() and not legacy.exists():
+        shutil.copy2(real_bg3, legacy)
+
     # Overwrite voice_priors.json with hardcoded defaults so tests are
     # isolated from calibrated values in the real identity/ directory.
     default_vp = VoicePriors()

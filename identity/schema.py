@@ -406,6 +406,177 @@ _VOICE_PRIORS_PATH = IDENTITY_DIR / "voice_priors.json"
 _SELF_PATH = IDENTITY_DIR / "self.md"
 _MAX_VERSION_DRIFT = 5  # guard against runaway version bumps
 
+# Default fandom slug when self.md does not yet declare currently_writing_in.
+# bg3 is the agent's bootstrap fandom (per bd-49j Section 3.8).
+_DEFAULT_FANDOM_SLUG = "bg3"
+
+
+def _parse_fandom_state(self_md: str) -> dict:
+    """Extract fandom-state fields from ``self.md`` content.
+
+    Looks for the post bd-49j Section 3.8 markers:
+
+    - ``currently_writing_in: <slug>``
+    - ``fandom_history: [<slug>, ...]``
+    - ``fandoms_explored:`` (followed by per-fandom indented entries)
+
+    The parser is intentionally lenient: it returns sensible defaults
+    when the file is empty or missing the markers, so legacy / partial
+    self.md files don't crash ``load_identity``.
+    """
+    currently: str = _DEFAULT_FANDOM_SLUG
+    history: list[str] = []
+    explored: dict = {}
+
+    if not self_md:
+        return {
+            "currently_writing_in": currently,
+            "fandom_history": history,
+            "fandoms_explored": explored,
+        }
+
+    in_explored = False
+    for raw in self_md.splitlines():
+        line = raw.strip()
+        # Stop the fandoms_explored block when a new section / bullet starts
+        # at the outermost indentation level without a leading dash.
+        if in_explored and raw and not raw.startswith((" ", "\t", "-")):
+            in_explored = False
+
+        if line.startswith("- currently_writing_in:") or line.startswith(
+            "currently_writing_in:"
+        ):
+            value = line.split(":", 1)[1].strip()
+            if value:
+                currently = value
+        elif line.startswith("- fandom_history:") or line.startswith(
+            "fandom_history:"
+        ):
+            value = line.split(":", 1)[1].strip()
+            value = value.strip("[]")
+            history = [
+                s.strip().strip("'\"") for s in value.split(",") if s.strip()
+            ]
+        elif line.startswith("- fandoms_explored:") or line.startswith(
+            "fandoms_explored:"
+        ):
+            tail = line.split(":", 1)[1].strip()
+            in_explored = True
+            if tail and tail != "":
+                # Inline dict form, e.g. fandoms_explored: {bg3: {...}}
+                # Best-effort: just record presence of slugs mentioned.
+                _record_inline_explored(tail, explored)
+        elif in_explored and line.startswith("- "):
+            # Indented entry like "- bg3: { first_seen: ..., works_published: 1 }"
+            entry = line[2:].strip()
+            if ":" in entry:
+                slug, payload = entry.split(":", 1)
+                slug = slug.strip()
+                if slug:
+                    explored[slug] = _parse_fandom_meta(payload.strip())
+
+    return {
+        "currently_writing_in": currently,
+        "fandom_history": history,
+        "fandoms_explored": explored,
+    }
+
+
+def _record_inline_explored(tail: str, explored: dict) -> None:
+    """Best-effort parse of an inline ``fandoms_explored: {...}`` value."""
+    cleaned = tail.strip().strip("{}")
+    if not cleaned:
+        return
+    # Split on commas at the top level only -- nested braces should not
+    # split. This is intentionally simple; we only need slug presence.
+    depth = 0
+    current = []
+    parts: list[str] = []
+    for ch in cleaned:
+        if ch == "{":
+            depth += 1
+            current.append(ch)
+        elif ch == "}":
+            depth -= 1
+            current.append(ch)
+        elif ch == "," and depth == 0:
+            parts.append("".join(current).strip())
+            current = []
+        else:
+            current.append(ch)
+    if current:
+        parts.append("".join(current).strip())
+
+    for part in parts:
+        if ":" not in part:
+            continue
+        slug, payload = part.split(":", 1)
+        slug = slug.strip()
+        if slug:
+            explored[slug] = _parse_fandom_meta(payload.strip())
+
+
+def _parse_fandom_meta(payload: str) -> dict:
+    """Best-effort parse of a per-fandom metadata blob.
+
+    Accepts shapes like ``{ first_seen: 2026-03-27, works_published: 1 }``
+    and returns a plain dict with the inner key/value pairs as strings.
+    """
+    inner = payload.strip().strip("{}").strip()
+    if not inner:
+        return {}
+    out: dict = {}
+    for token in inner.split(","):
+        token = token.strip()
+        if not token or ":" not in token:
+            continue
+        k, v = token.split(":", 1)
+        out[k.strip()] = v.strip().strip("'\"")
+    return out
+
+
+def _read_fandom_file(slug: str) -> str:
+    """Read ``IDENTITY_DIR/fandoms/{slug}.md`` for the given fandom slug.
+
+    Falls back to the legacy ``IDENTITY_DIR/fandom_context.md`` for
+    backward compatibility (e.g. test fixtures that have not yet been
+    updated for the post-bd-49j layout). Returns ``""`` if neither
+    exists.
+    """
+    primary = IDENTITY_DIR / "fandoms" / f"{slug}.md"
+    if primary.exists():
+        return primary.read_text(encoding="utf-8")
+    legacy = IDENTITY_DIR / "fandom_context.md"
+    if legacy.exists():
+        return legacy.read_text(encoding="utf-8")
+    return ""
+
+
+def resolve_fandom_path(slug: str) -> Path:
+    """Return the path to ``identity/fandoms/{slug}.md``.
+
+    The path is returned regardless of whether the file exists. Callers
+    that need a strict existence check should ``raise FileNotFoundError``
+    themselves with a slug-bearing message.
+    """
+    return IDENTITY_DIR / "fandoms" / f"{slug}.md"
+
+
+def read_fandom_context(slug: str) -> str:
+    """Read the fandom context for *slug* or raise ``FileNotFoundError``.
+
+    This is the strict variant used by the write loop: an unknown slug
+    must be a hard error so a brief for an unwritten fandom does not
+    silently inherit bg3 context (per spec Section 4.7).
+    """
+    path = resolve_fandom_path(slug)
+    if not path.exists():
+        raise FileNotFoundError(
+            f"No fandom context file for slug {slug!r} at {path}. "
+            "Add identity/fandoms/{slug}.md or correct brief.fandom."
+        )
+    return path.read_text(encoding="utf-8")
+
 
 def load_identity(max_tokens: int | None = None) -> dict:
     """Load the full identity context as a dict of file contents.
@@ -416,8 +587,10 @@ def load_identity(max_tokens: int | None = None) -> dict:
     to fit within the budget.
 
     Returns a dict with keys ``self``, ``pen_name``, ``inspirations``,
-    ``fandom_context`` (all markdown strings) and ``voice_priors``
-    (a :class:`VoicePriors` instance).
+    ``fandom_context`` (all markdown strings), ``voice_priors``
+    (a :class:`VoicePriors` instance), and the post-bd-49j fandom-state
+    keys ``currently_writing_in`` (str), ``fandom_history`` (list[str]),
+    and ``fandoms_explored`` (dict).
     """
     if max_tokens is None:
         # Original unbounded behaviour
@@ -425,7 +598,6 @@ def load_identity(max_tokens: int | None = None) -> dict:
             "self": "self.md",
             "pen_name": "pen_name.md",
             "inspirations": "inspirations.md",
-            "fandom_context": "fandom_context.md",
         }
         result: dict = {}
         for key, filename in md_files.items():
@@ -433,6 +605,18 @@ def load_identity(max_tokens: int | None = None) -> dict:
             result[key] = (
                 path.read_text(encoding="utf-8") if path.exists() else ""
             )
+
+        # Fandom state derived from self.md (post bd-49j Section 3.8)
+        fandom_state = _parse_fandom_state(result["self"])
+        result["currently_writing_in"] = fandom_state["currently_writing_in"]
+        result["fandom_history"] = fandom_state["fandom_history"]
+        result["fandoms_explored"] = fandom_state["fandoms_explored"]
+
+        # Read the fandom context file, post-migration to identity/fandoms/
+        result["fandom_context"] = _read_fandom_file(
+            result["currently_writing_in"]
+        )
+
         result["voice_priors"] = _load_voice_priors()
         return result
 
@@ -449,6 +633,9 @@ def _load_identity_budgeted(budget: int) -> dict:
         "pen_name": "",
         "inspirations": "",
         "fandom_context": "",
+        "currently_writing_in": _DEFAULT_FANDOM_SLUG,
+        "fandom_history": [],
+        "fandoms_explored": {},
     }
     remaining = budget
 
@@ -468,6 +655,10 @@ def _load_identity_budgeted(budget: int) -> dict:
 
     # Priority 2: self.md key sections (Voice + Current Focus)
     self_md = _read("self.md")
+    fandom_state = _parse_fandom_state(self_md)
+    result["currently_writing_in"] = fandom_state["currently_writing_in"]
+    result["fandom_history"] = fandom_state["fandom_history"]
+    result["fandoms_explored"] = fandom_state["fandoms_explored"]
     self_sections = _parse_sections(self_md)
     key_self = ""
     for section_name in ("voice", "current_focus"):
@@ -486,7 +677,9 @@ def _load_identity_budgeted(budget: int) -> dict:
         return result
 
     # Priority 3: fandom_context key sections (Canon Summary + Character Voices)
-    fandom_md = _read("fandom_context.md")
+    # Post bd-49j Section 4.7: read identity/fandoms/{currently_writing_in}.md
+    # and fall back to the legacy fandom_context.md for old fixtures.
+    fandom_md = _read_fandom_file(result["currently_writing_in"])
     fandom_sections = _parse_sections(fandom_md)
     key_fandom = ""
     for section_name in ("canon_summary", "character_voices"):
