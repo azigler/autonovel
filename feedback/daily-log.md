@@ -1,0 +1,1 @@
+2026-05-03 — first /daily iteration; mail diff false-positive on TheIcyQueen (digest.id=None pre-spec); skipped maintenance. Tomorrow: arming /loop /daily, the short-circuit should fire on tomorrow's wake.
