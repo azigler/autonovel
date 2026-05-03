@@ -20,7 +20,7 @@ Run via `/loop /heartbeat`. The first iteration runs immediately; each subsequen
 In order. Halt at the first match.
 
 1. **Stop file:** if `.heartbeat-stop` exists in repo root → log halt, do NOT call `ScheduleWakeup`, exit. Human re-arms by deleting the file and re-running `/loop /heartbeat`.
-2. **Open P0 STOP bead:** `br ls --type human --priority 0 --status open` → if any title matches `^human: STOP` → halt as above.
+2. **Open P0 STOP bead:** `br list --type human --priority 0 --status open` → if any title matches `^human: STOP` → halt as above.
 3. **Error budget:** load `feedback/heartbeat-state.json`. If `consecutive_errors >= 3` → halt. File a P0 human bead `human: STOP — error budget exceeded` if not already present.
 4. **Git state:** `git branch --show-current` must be `master`. `git status --short` must NOT show unstaged changes outside `feedback/heartbeat-log.md` and `feedback/heartbeat-state.json`. Anything weird → halt with a P0 human bead.
 5. **Identity drift:** quick checksum on `identity/handles.json`, `identity/self.md`, `identity/voice_priors.json`, `identity/soul.md` against the last-seen checksums in heartbeat-state. Mismatch outside a /learn cycle → halt with a P0 human bead `human: STOP — identity-file mutation detected outside /learn`.
@@ -73,7 +73,7 @@ for digest_path in glob("feedback/*_digest.json"):
 ### 1b — Other signals
 
 ```python
-open_human = run("br ls --type human --status open --json")  # parse JSON
+open_human = run("br list --type human --status open --json")  # parse JSON
 learn_pending = check_learn_eligibility()  # any work with new mail since last /learn cycle on it
 brief_ready = check_brief_ready()  # brief in briefs/ + experiment bead in_progress + no draft.md
 conceive_reactive = (
