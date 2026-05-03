@@ -15,7 +15,7 @@ A real writer doesn't draft a chapter every day. The day has a rhythm: small, ri
 
 Run once per iteration. Each iteration is small (≤25 minutes total of orchestrator work). Sleep ~24h. Repeat.
 
-## Step 0 — Sanity check (≤30 sec)
+## Step 0 — Sanity check + today-already-done short-circuit (≤30 sec)
 
 Verify you're in the right tree:
 
@@ -25,7 +25,25 @@ git branch --show-current  # must be master, not worktree-agent-*
 test -f identity/self.md || { echo "Wrong tree, aborting"; exit 1; }
 ```
 
-If anything is off — wrong cwd, on a worktree branch, identity files missing — surface to user and skip the rest of the loop. Reschedule for ~24h anyway; tomorrow's pass will retry.
+If anything is off — wrong cwd, on a worktree branch, identity files missing — surface to user and skip the rest of the loop. The /loop driver handles re-scheduling.
+
+### Today-already-done short-circuit (LOAD-BEARING)
+
+Because `ScheduleWakeup` clamps to ≤1h, `/loop /daily` wakes hourly — but the rituals are designed to fire ONCE per UTC day. Without this short-circuit, every wake re-runs Steps 1-4 (including a fresh AO3 scrape on every iteration), which would burn AO3 quota and produce 24+ daily-log lines per day.
+
+```bash
+TODAY=$(date -u +%Y-%m-%d)
+if test -f feedback/daily-log.md && grep -q "^${TODAY}" feedback/daily-log.md; then
+  echo "today's rituals already done; skipping Steps 1-4"
+  # If running standalone (not under /loop), still call ScheduleWakeup at Step 5.
+  # If running under /loop /daily, /loop handles the next ScheduleWakeup — exit cleanly.
+  exit 0
+fi
+```
+
+Today is "already done" if `feedback/daily-log.md` has a line whose first 10 chars are today's `YYYY-MM-DD` (the EOD-note format from Step 4). The line gets written at the END of an iteration, so an iteration that crashes mid-flight will retry on the next wake.
+
+If today's not done, proceed with Steps 1-4.
 
 ## Step 1 — Morning pages (≤5 min)
 
@@ -103,9 +121,11 @@ git commit -m ":calendar: daily: $(date -I) ritual pass"
 
 (Skip the commit on iterations that produced no changes — empty days are fine.)
 
-## Step 5 — Schedule next wake
+## Step 5 — Schedule next wake (standalone-mode only)
 
-Use the `ScheduleWakeup` tool. Aim for ~22-24h forward with a few minutes of jitter so the loop doesn't drift to a perfectly predictable wall-clock time.
+**If invoked under `/loop /daily`, SKIP this step.** /loop handles the next ScheduleWakeup itself, so /daily calling it would double-schedule. Just exit cleanly.
+
+If invoked standalone (manually, without /loop wrapping), use the `ScheduleWakeup` tool. Aim for ~22-24h forward with a few minutes of jitter so the loop doesn't drift to a perfectly predictable wall-clock time.
 
 ```python
 # Pseudocode for the call shape:
