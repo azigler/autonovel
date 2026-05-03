@@ -57,9 +57,30 @@ for digest_path in glob("feedback/*_digest.json"):
     digest["last_fetched_at"] = now().isoformat()
 
     if not digest.get("baseline_at"):
-        # OQ-05 baseline-on-first-scrape: NO /mail fire
+        # OQ-05 baseline-on-first-scrape: NO /mail fire on this iteration.
+        #
+        # Three sub-cases, all handled by this branch:
+        #
+        # (a) Brand-new digest (no `comments` field, or empty list) — write
+        #     fresh baseline from the AO3 fetch.
+        # (b) Pre-bd-49j digest (rich `comments` list, no `baseline_at`
+        #     marker — see feedback/82950256_digest.json for the prototype).
+        #     PRESERVE existing per-comment metadata (sentiment, register,
+        #     quoted_passage, quoted_passage_significance, specific_craft_named,
+        #     etc.). Merge: for each AO3 comment, if its id already exists in
+        #     digest["comments"], leave the record alone. If it's truly new,
+        #     append a basic record. The whole set becomes the baseline.
+        # (c) Digest wiped after corruption — same merge logic; if existing
+        #     comments list is empty, behaves like (a).
+        existing_by_id = {c.get("id"): c for c in digest.get("comments", [])}
+        merged = []
+        for ao3_c in comments:
+            if ao3_c.id in existing_by_id:
+                merged.append(existing_by_id[ao3_c.id])  # preserve analysis
+            else:
+                merged.append(comment_to_record(ao3_c))  # new entry
+        digest["comments"] = merged
         digest["baseline_at"] = now().isoformat()
-        digest["comments"] = [comment_to_record(c) for c in comments]
         Path(digest_path).write_text(json.dumps(digest, indent=2))
         continue
 
