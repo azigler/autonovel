@@ -1,1 +1,2 @@
 2026-05-03 — first /daily iteration; mail diff false-positive on TheIcyQueen (digest.id=None pre-spec); skipped maintenance. Tomorrow: arming /loop /daily, the short-circuit should fire on tomorrow's wake.
+2026-05-04 — first cross-day /daily iteration; mail empty (no new comments since yesterday's baseline); closed bd-u5e as the maintenance task (loop is armed and proven). Tomorrow: keep watching mail; bd-pc8 ch02 draft is the highest-value real work waiting.
