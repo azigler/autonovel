@@ -92,3 +92,43 @@ And in dialogue, a few lines later:
 - A character in transition between selves (leaving a faith, leaving a role, leaving a relationship) where the body hasn't updated yet and catches itself executing the old pattern.
 - When the character's current relationship to the thing they've left is ambivalent — they chose to leave, but they're allowed to also find the old shape comforting or orienting, and the prose shouldn't punish that ambivalence.
 - Pairs well with a dialogue exchange that makes the private image speakable. Entry 002's collaborative-metaphor device can extend this one: first the interior groping, then a conversation that lets someone else witness it.
+
+---
+
+## Entry 004
+
+**Source:** "untitled (Shadowheart errand)" (calibration 2, write/runs/calibration_2_shadowheart/draft.md), drafted 2026-03-27
+**POV:** Shadowheart (with Karlach in dialogue)
+**Validated by:** Internal evaluation. Same draft as Entry 003 but a different scene, different device cluster. Mined 2026-05-06 in /daily Step 3 maintenance.
+
+**Devices demonstrated:**
+- Negation-as-affection. "I don't have a face." / "You have several faces." Two characters performing a small comedic denial-and-counter-denial. The denial isn't sincere on either side; both are participating in a ritual that doubles as recognition. Useful for showing closeness without naming it.
+- Catalogue of micro-expressions as intimacy claim. "This is the one that means you were right about something and you're being gracious about it." Knowing someone's faces well enough to taxonomize them IS the demonstration of how well they're known. The prose doesn't have to assert the closeness; the catalogue is the proof.
+- Laughter as force-on-environment. "Karlach laughed, the big one, the one that came from somewhere in her chest and didn't apologize for taking up room. The candle on the desk wavered." Sound described through what it does to a nearby object, not through the sound itself. Externalized embodiment.
+- Three-clause minimalist concession. "Okay. Fair. I was a little worried." Each clause cedes a small piece of ground. The accumulation IS the apology. Same shape works for any character ceding to another; substitute the words but keep the rhythm.
+- Single-word emotional resolution after the comedy. "Thank you." landed plainly, immediately followed by the second character refusing to make it a moment ("Karlach just nodded, like it wasn't worth making a thing of."). The emotional beat is allowed to land without ceremony.
+
+**The passage:**
+
+> "You're watching me eat," Shadowheart said.
+>
+> "I'm not."
+>
+> "You're making the face."
+>
+> "I don't have a face."
+>
+> "You have several faces. This is the one that means you were right about something and you're being gracious about it." Shadowheart took another piece of bread. "It's annoying."
+>
+> Karlach laughed, the big one, the one that came from somewhere in her chest and didn't apologize for taking up room. The candle on the desk wavered. "Okay. Fair. I was a little worried."
+>
+> "I know." Shadowheart looked at the lentils. They were good, cumin, she thought, and something slightly sharp she couldn't name. "Thank you."
+>
+> The words came out more simply than she'd intended. Karlach just nodded, like it wasn't worth making a thing of.
+
+**Note:** The source draft contains em-dashes (predates 2026-04-16 rule). Reproduced here with em-dashes replaced by commas, per bank policy.
+
+**When to reach for this device:**
+- A scene where two characters with established trust need to acknowledge something serious (one was worried, the other was avoiding) but neither wants ceremony around it. The denial-and-counter-denial banter lets them lower the stakes verbally so the genuine moment can land plainly when it comes.
+- When you want intimacy depicted through pattern-knowledge rather than physical contact or declaration. Useful in BG3 fic for non-romantic close-friend pairs (Karlach/Shadowheart, Karlach/Wyll, Astarion/Shadowheart) where the closeness is real but the romantic register would distort it.
+- When the prose needs an embodied ambient detail to mark a beat (the candle wavering). External objects responding to a character's energy lets the scene breathe without the narrator having to comment.
