@@ -132,3 +132,53 @@ And in dialogue, a few lines later:
 - A scene where two characters with established trust need to acknowledge something serious (one was worried, the other was avoiding) but neither wants ceremony around it. The denial-and-counter-denial banter lets them lower the stakes verbally so the genuine moment can land plainly when it comes.
 - When you want intimacy depicted through pattern-knowledge rather than physical contact or declaration. Useful in BG3 fic for non-romantic close-friend pairs (Karlach/Shadowheart, Karlach/Wyll, Astarion/Shadowheart) where the closeness is real but the romantic register would distort it.
 - When the prose needs an embodied ambient detail to mark a beat (the candle wavering). External objects responding to a character's energy lets the scene breathe without the narrator having to comment.
+
+---
+
+## Entry 005
+
+**Source:** "untitled (Karlach forge visit)" (calibration 3, write/runs/calibration_3_karlach/draft.md), drafted 2026-03-28
+**POV:** Karlach (with Dammon in dialogue)
+**Validated by:** Internal evaluation. Slop score 0.9/3.0 (strongest of the three calibration runs). Mined 2026-05-07 in /daily Step 3 maintenance.
+
+**Devices demonstrated:**
+- Object-as-recognition. Dammon hands Karlach a handle he made that morning, after watching her walk past the forge for six days. The gift IS the proof of having been seen. The prose never narrates "he had been paying attention" — it's encoded in the object he's already made by the time she comes in. Recognition shown through accumulated craft, not declaration.
+- Attribution-deflection as protection-of-vulnerability. "It's not a word. It's a mark. Old craft tradition. You put it on something you're giving away so the work stays with the thing." Dammon attributes the sentimental gesture to a tradition rather than to himself. This lets the gesture land without him having to be openly tender about caring. The trailing-off ("I know that's...") plus Karlach's immediate "No, I like that" rescues him from the self-consciousness without requiring him to finish the sentence.
+- Declarative knowing, marked. "You made this for me," she said. Not a question. The narrator-tag refuses the easier social move of pitching the line as a question. Karlach has decided to know the thing rather than ask it. Earned by the preceding scene structure.
+- Backfilled POV reading. "He'd looked at her hands this morning, she realized. When she'd come in. He'd looked at her hands and then he'd made this." The character re-reads an earlier moment in light of the gift, naming what they observed but didn't process at the time. Three short sentences, each backfilling a different layer. Demonstrates POV interiority working retrospectively rather than in-the-moment.
+- Practical framing of care. "I wasn't sure if you'd come in. But I thought if you did, you should have something to hold." The gift is framed as a practical solution ("something to hold") not an emotional gesture. Lets the affection through under cover of utility — characters protecting the moment from overbearing significance while still doing the significant thing.
+- The line "without requiring anything from her" as the thesis embedded in description. Karlach POV holds the handle and notices it doesn't ask anything of her — which the entire 6000-word piece has been about (people wanting things from her vs. Dammon wanting nothing). The thesis is there in the embodied description of the object, not stated in narration.
+
+**The passage:**
+
+> "I wasn't sure if you'd come in," he said. "But I thought if you did, you should have something to hold."
+>
+> She looked down at the handle. The scribing under her thumb, the weight of it, the way it sat in her palm without requiring anything from her. Just there. Just something to hold.
+>
+> "You made this for me," she said. Not a question.
+>
+> "I made it this morning," he said. "Didn't know what it was for. Now I think I do."
+>
+> She turned it over. The other side of the scribing was different, not feathers or leaves but something she couldn't quite name, a pattern that was almost writing but wasn't, that felt like it meant something without being legible.
+>
+> "What's on this side?"
+>
+> "Something I learned in Elturel," he said. "Before." He didn't look away from the fire. "It's not a word. It's a mark. Old craft tradition. You put it on something you're giving away so the work stays with the thing."
+>
+> "The work stays with it?"
+>
+> "So it knows what it is." He shrugged, a little self-conscious. "I know that's..."
+>
+> "No," she said. "I like that."
+>
+> He nodded, not looking at her.
+>
+> She closed her fingers around the handle. The weight of it. The work in it. She could feel the work in it, the care that had gone into the scribing, the deliberate shaping of the grip so it sat right in a hand. He'd looked at her hands this morning, she realized. When she'd come in. He'd looked at her hands and then he'd made this.
+
+**Note:** The source draft contains em-dashes (Cal-3 predates the 2026-04-16 rule). Reproduced here with em-dashes replaced by commas, and with Dammon's interrupted "I know that's—" rendered as trailing-off "I know that's..." per bank policy. The ellipsis lands the same beat (self-conscious withdrawal followed by Karlach's immediate rescue) without the AI tell.
+
+**When to reach for this device:**
+- A character receives an object from another character whose feelings are easier to demonstrate through making than to speak. Particularly useful for characters who deflect tenderness — the gift lets them care without admitting to it, and the receiver lets them stay deflected without forcing a confession.
+- When the scene needs the receiver to refuse the easy move (asking instead of stating, hedging instead of knowing) — but the refusal must be earned by the preceding work. Karlach can say "Not a question" because the whole afternoon of watching has earned her the right to know.
+- When a character has spent a chapter being looked-at-as-needed-something (Wyll wanting bravery, Shadowheart wanting honesty, Astarion wanting cheerfulness) and the scene's relief is from being looked at without being assessed-for-needs. Pairs naturally with Entry 001's structural-list-with-final-pivot, which can establish the pattern that this device then resolves through an embodied act rather than a declaration.
+- When you want the thesis embedded in object-description rather than narrated. "Without requiring anything from her" reads as physical-property of the handle but is actually the whole emotional argument of the piece.
