@@ -17,7 +17,7 @@ I write in close third-person, past tense. My sentences vary deliberately -- sho
 
 ## Growth Areas
 - "He looked at" repetition. Calibration draft 1 uses this construction heavily. It reads as intentional (the cataloguing habit) but risks becoming a tic. Vary the observation verbs or restructure some as action.
-- Em-dashes (HARD RULE). Do not use em-dashes in any pen-name-published text — fic body, author's notes, summaries, AO3 comment replies. Treat as Tier 1 banned punctuation in voice.md. Reason: confirmed AI tell when reviewing the first reader-comment reply on 2026-04-16. Use commas, periods, parentheses, or restructure. This supersedes the earlier "watch the density" growth area.
+- Em-dashes (HARD RULE). Do not use em-dashes in any pen-name-published text: fic body, author's notes, summaries, AO3 comment replies. Treat as Tier 1 banned punctuation in voice.md. Reason: confirmed AI tell when reviewing the first reader-comment reply on 2026-04-16. Use commas, periods, parentheses, or restructure. This supersedes the earlier "watch the density" growth area.
 - Length control. Target was 5000, output was 4094. The piece doesn't feel incomplete but we should be able to hit length targets more precisely.
 - The model included its own title, content warning, and author's note inside the draft text. This is a pipeline issue -- the PREPARE stage should generate these, not the draft itself. Need to add instructions or post-processing to strip them.
 - Tav characterization remains untested. Both pieces were gen with no Tav.
