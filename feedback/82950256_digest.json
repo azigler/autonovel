@@ -7,13 +7,13 @@
   "digest_collected_at": "2026-04-16",
   "days_since_publication": 4,
   "stats": {
-    "kudos": 2,
-    "hits": 69,
+    "kudos": 3,
+    "hits": 76,
     "bookmarks": 1,
-    "comment_count": 1,
+    "comment_count": 2,
     "subscriptions": 0,
-    "kudos_per_hit": 0.029,
-    "bookmark_rate": 0.014
+    "kudos_per_hit": 0.0395,
+    "bookmark_rate": 0.0132
   },
   "comments": [
     {
@@ -82,5 +82,23 @@
     "fandom_context": "No update needed \u2014 characterization not flagged."
   },
   "baseline_at": "2026-05-03T04:40:21.837959+00:00",
-  "last_fetched_at": "2026-05-10T00:40:13.592586+00:00"
+  "last_fetched_at": "2026-05-10T23:38:09.939719+00:00",
+  "stats_history": [
+    {
+      "recorded_at": "2026-05-10T23:38:09.939702+00:00",
+      "kudos": 3,
+      "hits": 76,
+      "bookmarks": 1,
+      "subscriptions": 0,
+      "comment_count": 2,
+      "delta_from_prev": {
+        "kudos": 1,
+        "hits": 7,
+        "bookmarks": 0,
+        "subscriptions": 0,
+        "comment_count": 1
+      },
+      "note": "first stats refresh since publication baseline (2026-04-16); +1 kudos from peoplearestillstrange, +7 hits"
+    }
+  ]
 }

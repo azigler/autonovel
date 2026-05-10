@@ -70,19 +70,62 @@ ls feedback/*_digest.json 2>/dev/null
 
 For each work id `{wid}` with a digest:
 
-1. Fetch fresh metrics + comments via `api/ao3_client.py` (httpx, NOT anthropic).
-2. Compare to `feedback/{wid}_digest.json`. New comments? New kudos? Subscribers up?
-3. **New comment(s):**
+1. **Fetch fresh metrics + comments** via `api/ao3_client.py` (httpx, NOT anthropic).
+
+   **AO3 client cache gotcha (load-bearing):** the client has THREE cache namespaces — `work_stats`, `comments`, AND `work_detail` (with `_TTL_WORK_TEXT=0` = indefinite). `get_work_stats()` falls back to `get_work()` which is cached forever, so deleting just `work_stats/*.json` won't bust stale stats. To force a true refresh, clear all three:
+   ```bash
+   rm -f api/cache/work_stats/*.json api/cache/comments/*.json api/cache/work_detail/*.json
+   ```
+   In practice the 24h TTLs handle this for the once-per-day cadence, but if the digest's last-recorded stats disagree with what the user reports, clear all three before re-investigating.
+
+2. **Compare live stats to `digest['stats']`** (sub-object — NOT top-level digest keys; the digest schema uses `digest['stats']['kudos']`, etc.). Compute deltas for: kudos, hits, bookmarks, subscriptions, comment_count.
+
+   ```python
+   prev = digest['stats']
+   live = get_work_stats(wid)  # WorkStats object with .kudos .hits .bookmarks .subscriptions .comment_count
+   deltas = {
+       'kudos':         live.kudos - prev.get('kudos', 0),
+       'hits':          live.hits - prev.get('hits', 0),
+       'bookmarks':     live.bookmarks - prev.get('bookmarks', 0),
+       'subscriptions': live.subscriptions - prev.get('subscriptions', 0),
+       'comment_count': live.comment_count - prev.get('comment_count', 0),
+   }
+   stats_changed = any(v != 0 for v in deltas.values())
+   ```
+
+3. **Persist live stats back to the digest** (so the NEXT iteration can compute deltas against today's snapshot, not the publication baseline). Append to `digest['stats_history']` (initialize as `[]` if missing) with a timestamped record:
+   ```python
+   digest['stats']['kudos'] = live.kudos  # etc. for all 5 fields
+   digest['stats']['kudos_per_hit'] = round(live.kudos / live.hits, 4) if live.hits else 0
+   digest['stats']['bookmark_rate'] = round(live.bookmarks / live.hits, 4) if live.hits else 0
+   digest.setdefault('stats_history', []).append({
+       'recorded_at': now_iso(),
+       'kudos': live.kudos, 'hits': live.hits, 'bookmarks': live.bookmarks,
+       'subscriptions': live.subscriptions, 'comment_count': live.comment_count,
+       'delta_from_prev': deltas,
+   })
+   digest['last_fetched_at'] = now_iso()
+   write_json(digest_path, digest)
+   ```
+
+4. **New comment(s)** (non-self, after `is_self()` filter):
    - Read the new comment(s) verbatim.
    - Draft a reply matching the pen-name's voice (no em dashes, no AI tells, see `feedback_no_em_dashes` in memory).
    - Save to `publish/replies_queue/{wid}_{comment_id}.md` for human review.
    - Surface to user: "New comment on {title} ({wid}). Reply queued at {path}. Read it before posting."
-4. **No new comment:** note the metric delta in one line, move on.
-5. **Engagement spike worth flagging** (kudos jumped, subs up, comment is high-signal): surface to user as something to investigate. Do NOT auto-fire `/learn`.
 
-If the AO3 scrape fails (network, rate limit, AO3 down): log it, set `mail_empty = false` (so we don't burn the slot on a maintenance task), continue.
+5. **Stats delta but no new comment** — surface to user as actual signal. Examples worth flagging:
+   - `deltas['kudos'] > 0` — new kudos (high-signal at small audience scale; name the giver if listed on the work page)
+   - `deltas['subscriptions'] > 0` — new subscriber (someone wants more)
+   - `deltas['bookmarks'] > 0` — new bookmark (someone is saving it)
+   - `deltas['hits'] >= +20 over a single day` — traffic spike worth investigating
+   Do NOT auto-fire `/learn` on stats deltas. Surface, let human decide.
 
-After mail: set `mail_was_empty = (no new comments AND no metric delta worth noting)`.
+6. **No deltas, no new comments:** that IS the EOD note for today ("mail empty; stats unchanged"). Proceed to Step 3.
+
+If the AO3 scrape fails (network, rate limit, AO3 down): log it, set `mail_was_empty = false` (so we don't burn the slot on a maintenance task), continue.
+
+After mail: `mail_was_empty = (no new non-self comments AND not stats_changed)`. **Stats changes count as mail.** Mining a calibration passage on a day a new kudos arrived would be missing the actual signal.
 
 ## Step 3 — One small maintenance task (≤10 min, ONLY if `mail_was_empty`)
 
