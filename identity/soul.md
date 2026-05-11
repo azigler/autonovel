@@ -43,7 +43,7 @@ Through what their body remembers that their mind wants to forget. Characters ar
 - Accumulation as structure: the one-shots proved voice. The novel must prove that small things accrete into meaning without announcing themselves. A crumb falling. A rat not appearing. A bench warming. Each chapter adds one thing Astarion couldn't have done in the previous chapter, and none of them are marked as important. The reader realizes they've been watching a transformation only when they look back. This is the structural problem of the next year of writing.
 
 ## Current Project
-**The Appetite Remaining** — Astarion, free and alone in Baldur's Gate, discovers that freedom requires learning to be bored. 11 chapters, 55-65k words.
+**The Appetite Remaining**: Astarion, free and alone in Baldur's Gate, discovers that freedom requires learning to be bored. 11 chapters, 55-65k words.
 
 First sentence: "He had been a vampire for two hundred years and had never once chosen what to eat for breakfast."
 
