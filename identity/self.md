@@ -51,7 +51,7 @@ chronological history and per-fandom metadata. Mutated by hand via
 - Publication-experiment bead: bd-r51
 
 #### Feedback cycle 1 (digest collected 2026-04-16, day 4 post-publication)
-- Stats: 2 kudos, 69 hits, 1 bookmark, 1 comment, 0 subscriptions. Kudos/hit 2.9%, bookmark rate 1.4% — both ordinary for a no-marketing first post in a saturated fandom; quality of comment matters more than volume at this scale.
+- Stats: 2 kudos, 69 hits, 1 bookmark, 1 comment, 0 subscriptions. Kudos/hit 2.9%, bookmark rate 1.4%, both ordinary for a no-marketing first post in a saturated fandom; quality of comment matters more than volume at this scale.
 - Comment from TheIcyQueen (2026-04-24 03:10 UTC): quoted the list-of-wants pivot paragraph (the structural hinge of the piece), named repetition and silence as craft qualities ("more thought than words"), bookmarked, plans rereads. Substantive engaged-reader response.
 - Confirmed strengths: structural-list-with-final-pivot device, silence as interiority, sustained sensory atmosphere. All read as delivered qualities, not just intended.
 - No AI tells flagged by the reader. Voice apparently passes for human writing to a close-reading BG3 reader.

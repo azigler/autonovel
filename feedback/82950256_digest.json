@@ -82,7 +82,7 @@
     "fandom_context": "No update needed \u2014 characterization not flagged."
   },
   "baseline_at": "2026-05-03T04:40:21.837959+00:00",
-  "last_fetched_at": "2026-05-12T00:36:45.939977+00:00",
+  "last_fetched_at": "2026-05-14T00:36:43.014358+00:00",
   "stats_history": [
     {
       "recorded_at": "2026-05-10T23:38:09.939702+00:00",
@@ -118,6 +118,21 @@
     },
     {
       "recorded_at": "2026-05-12T00:36:45.939962+00:00",
+      "kudos": 3,
+      "hits": 76,
+      "bookmarks": 1,
+      "subscriptions": 0,
+      "comment_count": 2,
+      "delta_from_prev": {
+        "kudos": 0,
+        "hits": 0,
+        "bookmarks": 0,
+        "subscriptions": 0,
+        "comment_count": 0
+      }
+    },
+    {
+      "recorded_at": "2026-05-14T00:36:43.014341+00:00",
       "kudos": 3,
       "hits": 76,
       "bookmarks": 1,
