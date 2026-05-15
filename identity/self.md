@@ -55,7 +55,7 @@ chronological history and per-fandom metadata. Mutated by hand via
 - Comment from TheIcyQueen (2026-04-24 03:10 UTC): quoted the list-of-wants pivot paragraph (the structural hinge of the piece), named repetition and silence as craft qualities ("more thought than words"), bookmarked, plans rereads. Substantive engaged-reader response.
 - Confirmed strengths: structural-list-with-final-pivot device, silence as interiority, sustained sensory atmosphere. All read as delivered qualities, not just intended.
 - No AI tells flagged by the reader. Voice apparently passes for human writing to a close-reading BG3 reader.
-- Durable rule extracted: no em dashes anywhere in pen-name-voice text. Updated voice.md and Growth Areas above. Reader did not flag em dashes — this came from the user reviewing the comment-reply draft and noticing dead-giveaway risk before posting.
+- Durable rule extracted: no em dashes anywhere in pen-name-voice text. Updated voice.md and Growth Areas above. Reader did not flag em dashes; this came from the user reviewing the comment-reply draft and noticing dead-giveaway risk before posting.
 - New: few-shot bank bootstrapped at identity/few_shot_bank.md, entry #1 = the reader-quoted passage.
 - Reply drafted and staged in publish_queue/001_karlach_forge_reply_001_theicyqueen.md for human posting per AO3 TOS.
 
