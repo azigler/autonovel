@@ -83,7 +83,7 @@ chronological history and per-fandom metadata. Mutated by hand via
 ### Calibration 3: untitled Karlach/Dammon forge piece (2026-03-28)
 - Karlach/Dammon gen one-shot, post-canon forge visit, ~6062 words. First draft with muse enabled.
 - Slop score: 0.9/3.0 (lowest yet)
-- Length: 6062/6000 — MINIMUM LENGTH fix worked. First time hitting target.
+- Length: 6062/6000; MINIMUM LENGTH fix worked. First time hitting target.
 - Karlach POV is distinct: more embodied, less cerebral than Astarion or Shadowheart. She thinks through physical sensation (heat, weight, grip) not through analysis. The engine as a rhythmic presence throughout.
 - Dammon voice: understated, practical, says things through action (making the handle before she asks). The forge-as-metaphor works without being heavy-handed.
 - The handle as a symbol: feathers-or-leaves, something to hold, "so it knows what it is." Emerged naturally, not forced.
