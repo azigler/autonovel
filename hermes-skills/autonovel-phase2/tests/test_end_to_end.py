@@ -228,3 +228,53 @@ def test_phase2_rollback_keeps_existing_queue_items(
     assert "bd-b5p.5" in content_before, (
         "Queue file must contain bead ID so OQ-7 grep enumeration works"
     )
+
+
+# ---------------------------------------------------------------------------
+# REGRESSION: bd-ylg / bd-b5p.5.3 /scrutinize FIX-FIRST 2026-05-27
+# ---------------------------------------------------------------------------
+
+
+def test_run_phase2_passes_strict_preamble_check_true_to_run_delegate(
+    clean_publish_queue: Path,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """REGRESSION (bd-ylg, /scrutinize FIX-FIRST 2026-05-27):
+
+    Verify run_phase2 invokes run_delegate with strict_preamble_check=True
+    in the production end-to-end path. Without this kwarg, child-model
+    preamble like "Here is the paragraph:" would land in
+    publish_request.body — exactly the failure mode spec §3 said to skip.
+
+    The /scrutinize gate caught that the impl's tests passed (59/59) but
+    the production call site at runner.py:333 was missing the kwarg.
+
+    Spy on run_delegate (the SUT's call site, not on delegate_task) and
+    assert the kwarg is set on every invocation.
+    """
+    runner_mod = importlib.import_module(
+        "hermes_skills.autonovel_phase2.runner"
+    )
+
+    captured_calls: list[dict] = []
+
+    def spy(*args, **kwargs):
+        captured_calls.append(dict(kwargs))
+        # Return clean prose so the rest of run_phase2 doesn't crash
+        return (
+            "She sat on the bench. The moths kept finding the lamp. "
+            "Astarion was quiet for once."
+        )
+
+    monkeypatch.setattr(runner_mod, "run_delegate", spy)
+
+    runner_mod.run_phase2()
+
+    assert len(captured_calls) >= 1, "run_phase2 must invoke run_delegate"
+    for i, call in enumerate(captured_calls):
+        assert call.get("strict_preamble_check") is True, (
+            f"run_phase2 call {i} must invoke run_delegate with "
+            f"strict_preamble_check=True (got {call.get('strict_preamble_check')!r}). "
+            "T-D-3 preamble gate must be enforced at production runtime, "
+            "not only in unit tests. Bug surfaced by /scrutinize on bd-b5p.5.3."
+        )

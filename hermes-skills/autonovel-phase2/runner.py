@@ -330,7 +330,14 @@ def run_phase2() -> str:
         length_enforcement="prompt",
     )
 
-    prose = run_delegate(system=system_p, user=user_p)
+    # FIX (bd-b5p.5.3 /scrutinize FIX-FIRST 2026-05-27): enable
+    # strict_preamble_check so T-D-3 preamble-gate is enforced at
+    # production runtime (not only in tests). Without this, child-model
+    # preamble like "Here is the paragraph:" would land in
+    # publish_request.body — exactly what spec §3 told us to skip.
+    prose = run_delegate(
+        system=system_p, user=user_p, strict_preamble_check=True
+    )
 
     slop = _slop_penalty(prose)
     vm_score = voice_match_score(prose=prose, anchor_passages=anchors)
