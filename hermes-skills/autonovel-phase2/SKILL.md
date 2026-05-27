@@ -53,18 +53,29 @@ target); does NOT replace it.
 
 ## How to invoke
 
-The skill's parent-agent body calls `run_phase2()` from
-`hermes_skills.autonovel_phase2.runner` — typically via the
-shipped `runner.py` CLI:
+**Phase 2 is Hermes-orchestrated** — `run_delegate` calls Hermes'
+`delegate_task` primitive which requires a parent-agent context. Do
+NOT invoke `python3 runner.py` standalone: it will fail with
+`ValueError: delegate_task returned no results: {'error':
+'delegate_task requires a parent agent context.'}`. The runner.py CLI
+exists for Hermes' own subprocess dispatch from within a parent-agent
+turn.
 
+Canonical invocation pathways:
+
+**Interactive / manual smoke:**
 ```bash
-cd /home/ubuntu/explore/autonovel
-python3 ~/.hermes/skills/autonovel-phase2/runner.py
+hermes -z 'use the autonovel-phase2 skill: invoke run_phase2 from hermes_skills.autonovel_phase2.runner via the terminal tool. Report the single-line stdout summary.' --yolo
 ```
 
-Exit code: `0` on PASS, `1` on FAIL (slop firewall). The cron
-`--deliver local` channel captures stdout into
-`~/.hermes/cron/output/autonovel-phase2/*`.
+**Scheduled (daily cron, parent-context supplied by Hermes daemon):**
+```bash
+hermes cron create '0 21 * * *' '/skill:autonovel-phase2 run' --deliver local
+```
+
+The cron `--deliver local` channel captures stdout into
+`~/.hermes/cron/output/autonovel-phase2/*`. Exit code: `0` on PASS,
+`1` on FAIL (slop firewall).
 
 ## Brief (hardcoded for Phase 2 — same as Phase 1)
 
