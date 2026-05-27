@@ -16,7 +16,6 @@ Categories covered:
 from __future__ import annotations
 
 import concurrent.futures
-import importlib
 import json
 from pathlib import Path
 
@@ -189,46 +188,36 @@ def test_staged_queue_file_round_trips_via_json(clean_publish_queue: Path):
 # ---------------------------------------------------------------------------
 
 
-def test_run_delegate_raises_on_malformed_delegate_response(
-    monkeypatch: pytest.MonkeyPatch,
-):
-    """ERROR: malformed-delegate — if delegate_task returns invalid
-    JSON or a JSON object missing the 'results' key, run_delegate
-    must raise a clear error rather than returning None / empty
-    string silently (would otherwise cause downstream slop scoring
-    to crash with an unhelpful trace).
+def test_extract_summary_raises_on_malformed_delegate_response():
+    """ERROR: malformed-delegate — if delegate_task's JSON-string return
+    isn't valid JSON, ``_extract_summary`` must raise a clear ValueError
+    rather than returning None / empty string silently (would otherwise
+    cause downstream slop scoring to crash with an unhelpful trace).
+
+    bd-b5p.5.6 note: this used to test ``run_delegate(prompt=...)`` —
+    that wrapper was removed when Pattern 5 moved delegate_task
+    invocation to the SKILL.md agent recipe. The substantive assertion
+    (extract step rejects malformed JSON) migrated to a direct test of
+    ``_extract_summary``.
     """
-    runner_mod = importlib.import_module(
-        "hermes_skills.autonovel_phase2.runner"
-    )
+    from hermes_skills.autonovel_phase2.runner import _extract_summary
 
-    def _bad_json(**kwargs) -> str:
-        return "this is not valid json at all"
-
-    monkeypatch.setattr(runner_mod, "delegate_task", _bad_json)
-    with pytest.raises(
-        (ValueError, RuntimeError, json.JSONDecodeError, KeyError)
-    ):
-        runner_mod.run_delegate(prompt="x")
+    with pytest.raises(ValueError, match="non-JSON"):
+        _extract_summary("this is not valid json at all")
 
 
-def test_run_delegate_raises_on_empty_results_array(
-    monkeypatch: pytest.MonkeyPatch,
-):
+def test_extract_summary_raises_on_empty_results_array():
     """ERROR: empty-results — delegate_task returning {results: []}
-    must raise; an empty results array means the child produced no
-    summary, which should not be silently treated as empty prose.
+    must raise via ``_extract_summary``; an empty results array means
+    the child produced no summary, which should not be silently treated
+    as empty prose.
+
+    bd-b5p.5.6 note: see EDGE 7 above — same migration rationale.
     """
-    runner_mod = importlib.import_module(
-        "hermes_skills.autonovel_phase2.runner"
-    )
+    from hermes_skills.autonovel_phase2.runner import _extract_summary
 
-    def _empty_results(**kwargs) -> str:
-        return json.dumps({"results": []})
-
-    monkeypatch.setattr(runner_mod, "delegate_task", _empty_results)
-    with pytest.raises((ValueError, RuntimeError, IndexError, KeyError)):
-        runner_mod.run_delegate(prompt="x")
+    with pytest.raises(ValueError, match="no results"):
+        _extract_summary(json.dumps({"results": []}))
 
 
 # ---------------------------------------------------------------------------

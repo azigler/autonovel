@@ -8,7 +8,7 @@ package that points at the real directory. Impl modules
 runner.py) live as siblings of this ``tests/`` dir and are imported by
 real planned module paths::
 
-    from hermes_skills.autonovel_phase2.runner import run_delegate
+    from hermes_skills.autonovel_phase2.runner import _wrap_prompt
     from hermes_skills.autonovel_phase2.anchor_selector import select_anchors
     from hermes_skills.autonovel_phase2.voice_match import voice_match_score
     from hermes_skills.autonovel_phase2.staging import stage_draft
@@ -134,62 +134,9 @@ def _isolate_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MOCK_MODE", "true")
 
 
-@pytest.fixture()
-def fake_delegate_task(monkeypatch: pytest.MonkeyPatch):
-    """Install a spy-able replacement for the Hermes delegate_task primitive.
-
-    The Phase 2 runner.run_delegate should call into delegate_task. Tests
-    that need to assert call args (T-D-1, T-D-2) install this spy and
-    inspect ``calls`` after invocation.
-    """
-    import json
-
-    calls: list[dict] = []
-
-    def _spy(
-        *,
-        goal: str,
-        context: str = "",
-        toolsets: list | None = None,
-        role: str = "leaf",
-        max_iterations: int | None = None,
-        **kwargs,
-    ) -> str:
-        calls.append(
-            {
-                "goal": goal,
-                "context": context,
-                "toolsets": toolsets or [],
-                "role": role,
-                "max_iterations": max_iterations,
-                "kwargs": kwargs,
-            }
-        )
-        # Return shape mirrors Hermes' delegate_task JSON-string contract.
-        return json.dumps(
-            {
-                "results": [
-                    {
-                        "summary": (
-                            "She sat on the bench. The moths kept finding "
-                            "the lamp. Astarion was quiet for once."
-                        ),
-                        "child_session_id": "test-child-session",
-                    }
-                ]
-            }
-        )
-
-    # Install on the planned runner module location. Tests may need to
-    # patch in additional locations once the impl lands.
-    try:
-        runner_mod = importlib.import_module(
-            "hermes_skills.autonovel_phase2.runner"
-        )
-        monkeypatch.setattr(runner_mod, "delegate_task", _spy, raising=False)
-    except ImportError:
-        # Impl not present yet — the spy is still useful for direct injection
-        # via the returned object.
-        pass
-
-    return types.SimpleNamespace(spy=_spy, calls=calls)
+# NOTE (bd-b5p.5.6): the ``fake_delegate_task`` fixture was removed when
+# Pattern 5 moved ``delegate_task`` invocation from ``runner.py`` to the
+# SKILL.md agent recipe. The parent agent now calls ``delegate_task`` as
+# its own tool (Step 3); ``runner.py`` no longer imports it, so there is
+# nothing to monkeypatch. Tests for the pure helpers (``_wrap_prompt``,
+# ``_check_preamble``, ``_extract_summary``) invoke them directly.

@@ -1,163 +1,78 @@
-"""T-D-* coverage: delegate_task migration + identity loader.
+"""T-D-* coverage: pure-helper tests (_wrap_prompt, _check_preamble,
+_extract_summary, load_identity).
 
-Spec: bd-b5p.5 §5 (test cases T-D-1, T-D-2, T-D-3, T-D-4)
-Sub-spec: §3.2 (delegate_task contract) + §3.3 (skill_view vs direct read)
+Spec: bd-b5p.5 §5 (test cases T-D-2, T-D-3, T-D-4)
+Sub-spec: §3.2 (delegate_task contract — the wrap-prompt half) +
+§3.3 (skill_view vs direct read)
 
-These tests verify the substrate migration from Phase 1's HTTP shim to
-Hermes' native delegate_task primitive, and that identity files are
-loaded via Path.read_text rather than skill_view (which would prepend
-attribution noise per cron/scheduler.py:1145-1162).
+bd-b5p.5.6 rewrite: the historical `run_delegate(prompt=...)` wrapper
+was removed when Pattern 5 moved `delegate_task` invocation from
+``runner.py`` to the SKILL.md agent recipe. Tests that asserted on
+the wrapper's call semantics (T-D-1) are gone; the substantive
+assertions migrated to direct tests of the pure helpers below.
+
+T-D-1 (delegate_task is invoked, args + role correct) is now a
+SKILL.md doc test (see ``test_skill_recipe.py``) — the agent calls
+``delegate_task`` as its own tool per the recipe.
 """
 
 from __future__ import annotations
 
 import importlib
 import inspect
+import json
 from pathlib import Path
 
 import pytest
-
-# Planned module imports — fail at runtime (correct TDD) if impl wave
-# hasn't built these yet.
-from hermes_skills.autonovel_phase2 import runner as runner_mod
 from hermes_skills.autonovel_phase2.identity_loader import load_identity
-from hermes_skills.autonovel_phase2.runner import run_delegate
+from hermes_skills.autonovel_phase2.runner import (
+    _check_preamble,
+    _extract_summary,
+    _wrap_prompt,
+)
 
 # ---------------------------------------------------------------------------
-# T-D-1: delegate_task is invoked (no HTTP fallback)
-# ---------------------------------------------------------------------------
-
-
-def test_run_delegate_invokes_delegate_task(
-    monkeypatch: pytest.MonkeyPatch, fake_delegate_task
-):
-    """TEST: T-D-1 (spec bd-b5p.5, delegate basic) — verify run_delegate
-    invokes the Hermes delegate_task primitive at least once.
-
-    Delegation-assertion pattern per /test SKILL Step 3.5: spy on the
-    real dependency, assert call args. If run_delegate is a stub body
-    that returns the right shape but never calls delegate_task, this
-    test fails immediately.
-    """
-    monkeypatch.setattr(runner_mod, "delegate_task", fake_delegate_task.spy)
-    run_delegate(prompt="A wrapped _PROSE_FRAME goal string for testing.")
-    assert len(fake_delegate_task.calls) == 1, (
-        f"Expected exactly 1 delegate_task call, got "
-        f"{len(fake_delegate_task.calls)}"
-    )
-
-
-def test_run_delegate_passes_wrapped_prompt_as_goal(
-    monkeypatch: pytest.MonkeyPatch, fake_delegate_task
-):
-    """TEST: T-D-1 (spec bd-b5p.5, delegate arg contract) — the wrapped
-    _PROSE_FRAME prompt MUST land in delegate_task's ``goal`` arg, not
-    ``context``. Per §3.2 the frame is self-contained and context="".
-    """
-    monkeypatch.setattr(runner_mod, "delegate_task", fake_delegate_task.spy)
-    canary = "CANARY_PROSE_FRAME_GOAL_PAYLOAD_8675309"
-    run_delegate(prompt=canary)
-    call = fake_delegate_task.calls[0]
-    assert canary in call["goal"], "Wrapped prompt must be passed as goal="
-    assert call["context"] == "", (
-        "Phase 2 spec §3.2 mandates context='' (frame is self-contained)"
-    )
-
-
-def test_run_delegate_uses_empty_toolsets_and_leaf_role(
-    monkeypatch: pytest.MonkeyPatch, fake_delegate_task
-):
-    """TEST: T-D-1 (spec bd-b5p.5, delegate role/toolsets) — child must
-    be a pure generator: toolsets=[] and role='leaf'. Per §3.2 design
-    decisions (no nested delegation; no tool latency).
-    """
-    monkeypatch.setattr(runner_mod, "delegate_task", fake_delegate_task.spy)
-    run_delegate(prompt="x")
-    call = fake_delegate_task.calls[0]
-    assert call["toolsets"] == [], "Phase 2 §3.2: toolsets=[] (pure generator)"
-    assert call["role"] == "leaf", "Phase 2 §3.2: role='leaf' (no nesting)"
-
-
-def test_run_delegate_does_not_issue_outbound_http(
-    monkeypatch: pytest.MonkeyPatch, fake_delegate_task
-):
-    """TEST: T-D-1 (spec bd-b5p.5, no HTTP shim) — confirm run_delegate
-    does NOT call urllib.request.urlopen or httpx.post directly.
-    Substantive evidence the Phase 1 shim path is gone.
-    """
-    import urllib.request
-
-    blocked_calls: list[str] = []
-
-    def _block_urlopen(*args, **kwargs):
-        blocked_calls.append(f"urlopen({args!r}, {kwargs!r})")
-        raise AssertionError(
-            "Phase 2 must not POST directly; use delegate_task."
-        )
-
-    monkeypatch.setattr(urllib.request, "urlopen", _block_urlopen)
-    monkeypatch.setattr(runner_mod, "delegate_task", fake_delegate_task.spy)
-
-    # Block httpx too if it's been wired in.
-    try:
-        import httpx
-
-        def _block_post(*args, **kwargs):
-            blocked_calls.append(f"httpx.post({args!r}, {kwargs!r})")
-            raise AssertionError(
-                "Phase 2 must not POST directly; use delegate_task."
-            )
-
-        monkeypatch.setattr(httpx, "post", _block_post, raising=False)
-    except ImportError:
-        pass
-
-    run_delegate(prompt="goal payload")
-    assert not blocked_calls, (
-        f"Phase 2 must not issue outbound HTTP from skill code; "
-        f"got: {blocked_calls}"
-    )
-
-
-# ---------------------------------------------------------------------------
-# T-D-2: child receives the wrapped prompt as `goal`
+# T-D-2: _wrap_prompt embeds the _PROSE_FRAME envelope
 # ---------------------------------------------------------------------------
 
 
-def test_run_delegate_wraps_prompt_with_prose_frame(
-    monkeypatch: pytest.MonkeyPatch, fake_delegate_task
-):
-    """TEST: T-D-2 (spec bd-b5p.5, OQ-1 resolution evidence) — the
-    ``goal`` passed to delegate_task must contain the verbatim
+def test_wrap_prompt_embeds_prose_frame_output_rules():
+    """TEST: T-D-2 (spec bd-b5p.5, OQ-1 resolution evidence) — the goal
+    string built by ``_wrap_prompt`` must contain the verbatim
     _PROSE_FRAME contract language so the child's effective system
     prompt embeds the persona-suppression rules.
 
-    Per spec §4.2 the parent builds the wrapped frame via
-    write.prompts.wrap_for_subagent before calling delegate_task.
+    Per spec §4.2 the parent agent invokes ``_wrap_prompt`` (via
+    ``execute_code`` in SKILL.md Step 2) before passing the result as
+    ``goal=`` to its own ``delegate_task`` tool call (Step 3).
     """
-    monkeypatch.setattr(runner_mod, "delegate_task", fake_delegate_task.spy)
-    # run_delegate accepts EITHER a pre-wrapped prompt or builds one from
-    # context. We pass a system+user combo and check the wrapping happens.
-    run_delegate(
-        system="VOICE: be Karlach.",
-        user="Write one paragraph.",
-    )
-    call = fake_delegate_task.calls[0]
-    goal = call["goal"]
+    goal = _wrap_prompt("VOICE: be Karlach.", "Write one paragraph.")
     # Load-bearing fragments of _PROSE_FRAME (verbatim from write/prompts.py)
     assert "OUTPUT RULES" in goal, (
-        "_PROSE_FRAME's OUTPUT RULES header must be in the goal"
+        "_PROSE_FRAME's OUTPUT RULES header must be in the wrapped goal"
     )
     assert "Do not break character" in goal, (
-        "_PROSE_FRAME's persona-suppression clause must be in the goal"
+        "_PROSE_FRAME's persona-suppression clause must be in the wrapped goal"
     )
     assert "VOICE AND CONSTRAINTS" in goal, (
-        "_PROSE_FRAME's VOICE block marker must be in the goal"
+        "_PROSE_FRAME's VOICE block marker must be in the wrapped goal"
     )
+
+
+def test_wrap_prompt_carries_caller_system_and_user_payloads():
+    """TEST: T-D-2 (spec bd-b5p.5, payload pass-through) — the caller's
+    system + user strings must be visible verbatim inside the wrapped
+    goal (the wrapper is a frame, not a paraphraser).
+    """
+    canary_sys = "SYS_CANARY_PHRASE_8675309_LOAD_BEARING"
+    canary_user = "USR_CANARY_PHRASE_4842300_LOAD_BEARING"
+    goal = _wrap_prompt(canary_sys, canary_user)
+    assert canary_sys in goal, "system payload must survive wrap_for_subagent"
+    assert canary_user in goal, "user payload must survive wrap_for_subagent"
 
 
 # ---------------------------------------------------------------------------
-# T-D-3: no preamble leakage in child response
+# T-D-3: _check_preamble rejects LLM preamble patterns
 # ---------------------------------------------------------------------------
 
 _PREAMBLE_PATTERNS = [
@@ -174,52 +89,54 @@ _PREAMBLE_PATTERNS = [
 
 
 @pytest.mark.parametrize("preamble", _PREAMBLE_PATTERNS)
-def test_run_delegate_rejects_preamble_in_first_100_chars(
-    monkeypatch: pytest.MonkeyPatch, preamble: str
-):
-    """TEST: T-D-3 (spec bd-b5p.5, preamble leakage gate) — if the
-    child returns prose whose first 100 chars contain known preamble
-    patterns, run_delegate MUST raise / return an error sentinel so
-    the staging step skips queue enqueue.
+def test_check_preamble_rejects_known_patterns(preamble: str):
+    """TEST: T-D-3 (spec bd-b5p.5, preamble leakage gate) — if prose's
+    first 100 chars contain known preamble patterns, ``_check_preamble``
+    MUST raise ValueError so the SKILL.md Step 4 recipe skips queue
+    enqueue.
     """
-    import json
-
-    def _bad_child(**kwargs) -> str:
-        return json.dumps(
-            {
-                "results": [
-                    {
-                        "summary": (
-                            f"{preamble} the paragraph you requested: "
-                            "She sat. The moths circled. He was quiet."
-                        )
-                    }
-                ]
-            }
-        )
-
-    monkeypatch.setattr(runner_mod, "delegate_task", _bad_child)
-    with pytest.raises((ValueError, RuntimeError, AssertionError)):
-        run_delegate(prompt="x", strict_preamble_check=True)
+    leaking_prose = (
+        f"{preamble} the paragraph you requested: "
+        "She sat. The moths circled. He was quiet."
+    )
+    with pytest.raises(ValueError, match="preamble leakage"):
+        _check_preamble(leaking_prose)
 
 
-def test_run_delegate_accepts_clean_prose(
-    monkeypatch: pytest.MonkeyPatch, fake_delegate_task
-):
+def test_check_preamble_accepts_clean_prose():
     """TEST: T-D-3 (spec bd-b5p.5, clean-prose happy path) — when the
-    child returns prose without preamble, run_delegate returns the
-    prose verbatim.
+    prose does not start with a preamble pattern, ``_check_preamble``
+    returns silently (None).
     """
-    monkeypatch.setattr(runner_mod, "delegate_task", fake_delegate_task.spy)
-    prose = run_delegate(prompt="x")
-    assert isinstance(prose, str), "run_delegate must return a str"
-    assert prose, "run_delegate must not return an empty string on success"
-    # No preamble in the spy's canned response (set in conftest)
-    first_100 = prose[:100]
-    for bad in _PREAMBLE_PATTERNS:
-        assert not first_100.startswith(bad), (
-            f"Clean prose path leaked preamble {bad!r}: {first_100!r}"
-        )
+    clean = (
+        "She sat on the bench. The moths kept finding the lamp. "
+        "Astarion was quiet for once."
+    )
+    assert _check_preamble(clean) is None
+
+
+# ---------------------------------------------------------------------------
+# T-D-3 (helper): _extract_summary parses Hermes delegate JSON shape
+# ---------------------------------------------------------------------------
+
+
+def test_extract_summary_returns_results_zero_summary_field():
+    """TEST: T-D-3 (spec bd-b5p.5, delegate-result parsing) —
+    ``_extract_summary`` must return ``results[0].summary`` from the
+    canonical Hermes ``delegate_task`` JSON-string return shape.
+    """
+    canned = json.dumps(
+        {
+            "results": [
+                {
+                    "summary": "She sat on the bench. The moths circled.",
+                    "child_session_id": "abc-123",
+                }
+            ]
+        }
+    )
+    prose = _extract_summary(canned)
+    assert prose == "She sat on the bench. The moths circled."
 
 
 # ---------------------------------------------------------------------------

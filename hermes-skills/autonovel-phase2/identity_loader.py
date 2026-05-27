@@ -164,9 +164,9 @@ def load_identity(root: Path | None = None) -> dict[str, str]:
             voice_priors_text = ""
 
     # Combine self.md + voice_priors into the identity block. The
-    # few_shot bank stays OUT of this combined block; the parent skill
-    # body slots POV-selected anchors back in after anchor_selector
-    # runs (see runner.run_phase2).
+    # few_shot bank stays OUT of this combined block; the parent agent's
+    # SKILL.md Step 2 execute_code snippet slots POV-selected anchors
+    # back in after anchor_selector runs (bd-b5p.5.6 Pattern 5).
     identity_block = self_md
     if voice_priors_text:
         identity_block = identity_block + "\n" + voice_priors_text
