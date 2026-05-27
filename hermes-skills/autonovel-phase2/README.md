@@ -81,8 +81,10 @@ cd /home/ubuntu/explore/autonovel
 ```
 
 The pytest suite covers all spec test cases (T-D-1 through T-E-3)
-plus 10 edge/boundary tests beyond the spec. 59 cases total
-(including the 9 parametrized preamble-leakage variants of T-D-3).
+plus 11 edge/boundary tests beyond the spec + 2 regression tests
+(strict_preamble_check enforcement bd-ylg + namespace bootstrap bd-hmm).
+61 cases total (including the 9 parametrized preamble-leakage variants
+of T-D-3).
 
 ## File layout
 
@@ -95,7 +97,7 @@ hermes-skills/autonovel-phase2/
 ├── anchor_selector.py      # POV-aware few-shot bank selector (§3.4)
 ├── voice_match.py          # Heuristic voice-match score + advisory gate (§3.5)
 ├── staging.py              # PublishRequest builder + slop firewall (§3.6)
-└── tests/                  # 59 pytest cases (test contract; do not modify)
+└── tests/                  # 61 pytest cases (test contract; do not modify)
 ```
 
 ## Rollback

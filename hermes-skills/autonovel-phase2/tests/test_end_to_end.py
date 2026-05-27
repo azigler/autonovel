@@ -295,10 +295,15 @@ def test_runner_bootstraps_namespace_for_standalone_invocation():
     and the deployment never gets far enough to surface real runtime issues.
 
     This test exercises the bootstrap path by invoking the script as a
-    subprocess (NOT via pytest's existing namespace install — that hides
-    the bug). The script will fail later with a clear delegate_task
-    parent-context error (expected for standalone invocation), but the
-    earlier ModuleNotFoundError class must NOT appear.
+    subprocess with PATH stripped (NOT via pytest's existing namespace
+    install — that hides the bug). The script will fail later somewhere
+    downstream of the bootstrap (delegate_task parent-context error in
+    production-equivalent venvs, or a missing-third-party-dep
+    ImportError like pydantic in this PATH-stripped env using
+    /usr/bin/python3) — both are acceptable; the ONLY thing the bd-hmm
+    regression guards is that the `hermes_skills` and `api`
+    ModuleNotFoundError classes do NOT appear, since those are the two
+    bootstrap stanzas we own.
     """
     import subprocess
 
@@ -318,7 +323,9 @@ def test_runner_bootstraps_namespace_for_standalone_invocation():
         timeout=30,
     )
     combined = (result.stdout or "") + "\n" + (result.stderr or "")
-    assert "ModuleNotFoundError: No module named 'hermes_skills'" not in combined, (
+    assert (
+        "ModuleNotFoundError: No module named 'hermes_skills'" not in combined
+    ), (
         "runner.py failed at namespace import — the bd-hmm bootstrap "
         f"regressed. Output:\n{combined}"
     )
