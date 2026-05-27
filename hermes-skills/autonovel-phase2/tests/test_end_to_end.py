@@ -278,3 +278,51 @@ def test_run_phase2_passes_strict_preamble_check_true_to_run_delegate(
             "T-D-3 preamble gate must be enforced at production runtime, "
             "not only in unit tests. Bug surfaced by /scrutinize on bd-b5p.5.3."
         )
+
+
+# ---------------------------------------------------------------------------
+# REGRESSION: bd-hmm 2026-05-27 — namespace bootstrap for standalone runner.py
+# ---------------------------------------------------------------------------
+
+
+def test_runner_bootstraps_namespace_for_standalone_invocation():
+    """REGRESSION (bd-hmm): runner.py must self-bootstrap the synthetic
+    `hermes_skills.autonovel_phase2` namespace + autonovel project root on
+    sys.path so that the lazy imports inside run_phase2 work when invoked
+    directly via `python3 ~/.hermes/skills/autonovel-phase2/runner.py`.
+
+    Without this, run_phase2's first lazy import raises ModuleNotFoundError
+    and the deployment never gets far enough to surface real runtime issues.
+
+    This test exercises the bootstrap path by invoking the script as a
+    subprocess (NOT via pytest's existing namespace install — that hides
+    the bug). The script will fail later with a clear delegate_task
+    parent-context error (expected for standalone invocation), but the
+    earlier ModuleNotFoundError class must NOT appear.
+    """
+    import subprocess
+
+    skill_runner = Path(__file__).resolve().parent.parent / "runner.py"
+    assert skill_runner.exists(), f"runner.py missing at {skill_runner}"
+
+    # Clean env so PYTHONPATH from pytest doesn't mask the bug
+    env = {
+        "PATH": "/usr/bin:/bin",
+        "HOME": "/tmp",  # avoid leaking pytest user state
+    }
+    result = subprocess.run(
+        ["python3", str(skill_runner)],
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=30,
+    )
+    combined = (result.stdout or "") + "\n" + (result.stderr or "")
+    assert "ModuleNotFoundError: No module named 'hermes_skills'" not in combined, (
+        "runner.py failed at namespace import — the bd-hmm bootstrap "
+        f"regressed. Output:\n{combined}"
+    )
+    assert "ModuleNotFoundError: No module named 'api'" not in combined, (
+        "runner.py failed at autonovel project import — the bd-hmm "
+        f"sys.path bootstrap regressed. Output:\n{combined}"
+    )

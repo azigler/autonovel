@@ -32,8 +32,34 @@ from __future__ import annotations
 import json
 import os
 import sys
+import types
 from pathlib import Path
 from typing import Any
+
+# FIX (bd-hmm 2026-05-27): bootstrap synthetic `hermes_skills.autonovel_phase2`
+# namespace so the lazy imports inside `run_phase2` work when this file is
+# invoked directly via `python3 ~/.hermes/skills/autonovel-phase2/runner.py`.
+# Without this, run_phase2's `from hermes_skills.autonovel_phase2.* import ...`
+# raises ModuleNotFoundError because the namespace only exists at test-time
+# via conftest.py. Standalone deployment broke at runtime smoke 2026-05-27.
+_SKILL_DIR = Path(__file__).resolve().parent
+if "hermes_skills.autonovel_phase2" not in sys.modules:
+    _hs = sys.modules.setdefault(
+        "hermes_skills", types.ModuleType("hermes_skills")
+    )
+    if not hasattr(_hs, "__path__"):
+        _hs.__path__ = []
+    _ap2 = types.ModuleType("hermes_skills.autonovel_phase2")
+    _ap2.__path__ = [str(_SKILL_DIR)]
+    sys.modules["hermes_skills.autonovel_phase2"] = _ap2
+
+# Make autonovel project modules (api.*, write.*, evaluate) importable
+# when invoked standalone via the symlink at ~/.hermes/skills/...
+_AUTONOVEL_ROOT = (
+    _SKILL_DIR.parent.parent
+)  # hermes-skills/autonovel-phase2/ -> autonovel/
+if str(_AUTONOVEL_ROOT) not in sys.path:
+    sys.path.insert(0, str(_AUTONOVEL_ROOT))
 
 # ---------------------------------------------------------------------------
 # delegate_task import (module-level symbol for monkeypatch per /test §3.5)
