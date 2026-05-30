@@ -1,326 +1,198 @@
 ---
 name: autonovel-phase2-worker
-description: "autonovel Phase 2 fanfic generator as a Hermes kanban worker. Dispatched by the gateway-embedded kanban dispatcher when an enqueue cron fires `hermes kanban create --skill autonovel-phase2-worker`. Lifecycle: kanban_show() orient, read identity files, generate prose, score, stage to publish_queue/, kanban_complete with metadata + artifacts. Bead bd-b5p.7."
-version: "0.4.0"
-author: "autonovel"
-license: MIT
-platforms: [linux, macos]
+description: Kanban-worker skill for autonovel's daily fanfic draft. One card on the `autonovel-writer` board per UTC day → orient via `kanban_show()`, load identity, wrap prompt, generate, score, stage to `publish_queue/`.
+version: 1.0.0
+related_skills: [kanban-worker, autonovel-phase1-smoke]
 metadata:
   hermes:
-    tags: [autonovel, fanfic, phase2, kanban-worker, delegate-task, voice-anchors, ao3-staging, bg3]
-    related_skills: [kanban-worker, autonovel-phase1-smoke]
-    category: creative
+    tags: [kanban, kanban-worker, autonovel, fanfic, phase2, bg3]
 ---
 
 # autonovel-phase2-worker
 
-Hermes kanban worker for the daily fanfic draft pipeline. The dispatcher
-spawns this worker with `KANBAN_GUIDANCE` auto-injected into the system
-prompt; that guidance covers the generic 6-step lifecycle (orient →
-work → heartbeat → block → complete → spawn). This SKILL body covers
-the autonovel-specific recipe layered on top.
+> You're seeing this because the kanban dispatcher spawned you against a
+> `draft daily fanfic YYYY-MM-DD` card on the `autonovel-writer` board.
+> The **lifecycle** (orient → work → heartbeat → block/complete) is
+> auto-injected into your system prompt as `KANBAN_GUIDANCE`
+> (`agent/prompt_builder.py:188-257`). This skill is the WHAT of the
+> work: identity inputs, the `delegate_task` shape, the scoring + staging
+> contract, the structured handoff metadata, and the anti-patterns.
 
-**Bead:** `bd-b5p.7` · **Parent epic:** `bd-b5p` · **Supersedes
-(architecturally):** `bd-b5p.5` / `bd-b5p.5.6` Pattern 5 ·
-**Research:** `~/explore/local-coding-models/refs/research/research-hermes-conformance.md`
+**Bead:** `bd-b5p.7` · **Parent epic:** `bd-b5p` · **Spec walk:** `bd-b5p.7.1` (closed) · **Rewrite bead:** `bd-b2p`
 
-## When you receive this task
+## What the work is
 
-You were dispatched by the gateway-embedded kanban dispatcher
-(per OQ-K-5 of bd-b5p.7.1 — `hermes-gateway.service` embeds the
-dispatcher; there is no separate `hermes kanban daemon` in v0.14.0+).
-The cron-fired enqueue script created your card with something like:
+The worker drafts one daily fanfic chapter (Baldur's Gate 3, POV typically
+Karlach) from the autonovel identity bundle, scores the prose for slop +
+voice match, and stages a PASS to `publish_queue/<queue_id>.json`. A FAIL
+is a legitimate outcome (the firewall did its job) — not a worker crash.
 
-```
-hermes kanban create "draft daily fanfic <YYYY-MM-DD>" \
-  --assignee autonovel-writer \
-  --skill autonovel-phase2-worker \
-  --workspace dir:/home/ubuntu/explore/autonovel \
-  --max-runtime 30m \
-  --idempotency-key autonovel-phase2-<YYYY-MM-DD>
-```
+One card → one worker run → one staged draft (PASS) **or** one recorded
+firewall-rejection (FAIL).
 
-Environment available to you:
+## Workspace
 
-- `$HERMES_KANBAN_TASK` — your task id
-- `$HERMES_KANBAN_WORKSPACE` — `/home/ubuntu/explore/autonovel`
-- Working directory — your CWD is `$HERMES_KANBAN_WORKSPACE`, so the
-  agent's `prompt_builder` cwd-scan (per
-  `agent/prompt_builder.py:1365-1390`, OQ-K-1) has ALREADY
-  auto-injected `/home/ubuntu/explore/autonovel/CLAUDE.md` into your
-  system prompt as a context file. You do NOT need to read it
-  explicitly.
+`dir:/home/ubuntu/explore/autonovel` — the autonovel repo root, set by the
+enqueue script's `--workspace`. The worker's cwd IS this workspace, so
+`prompt_builder._inject_claude_md()` has already auto-injected the
+workspace `CLAUDE.md` and `AGENTS.md` into the system prompt at startup
+(per OQ-K-1). Do NOT re-read `CLAUDE.md` or `AGENTS.md` — that wastes
+tool turns and creates confusion about which is canonical.
 
-## What this worker does
+Writes land at `publish_queue/<queue_id>.json` via the `staging.stage_draft`
+helper. Nothing else gets written.
 
-The generic kanban lifecycle (orient → work → heartbeat → block →
-complete → spawn) is already in your system prompt as
-`KANBAN_GUIDANCE` (`agent/prompt_builder.py:188-257`); don't restate
-or contradict it. The autonovel-specific work layered on top, in order:
+## Profile + tools available
 
-- Generate one paragraph of BG3 (Baldur's Gate 3) fanfic via the
-  agent's own `delegate_task` tool, with the wrapped goal built from
-  `runner._wrap_prompt`.
-- Score the prose via `voice_match.voice_match_score` (POV-aware) and
-  `evaluate.slop_score` (production threshold 3.0).
-- Stage the result via `staging.stage_draft` to
-  `publish_queue/<queue_id>.json` (the slop-gate firewall is internal
-  to `stage_draft` — FAIL returns `None`, no file written).
-- Complete via `kanban_complete(summary, metadata, artifacts)` per
-  OQ-K-3 — the `artifacts=[...]` list carries the
-  `publish_queue/<id>.json` path so the gateway notifier hooks
-  native attachment upload.
+Profile `autonovel-writer`, dispatched against board `autonovel-writer`
+(per the Wave-19 Rule-2 workload partition; the default board is for
+other Hermes work). Tools this work uses:
 
-The steps that follow walk this in order, but the first thing you do
-on dispatch is always `kanban_show()` (per `KANBAN_GUIDANCE` Step 1).
+| Tool | What |
+|---|---|
+| `kanban_show` | Orient on the dispatched card (title, body, prior attempts, parent handoffs) — your first action via `kanban_show()` |
+| `read_file` | Direct identity-file reads (NOT `skill_view`, which prepends an attribution preamble per bd-b5p.5 OQ-2 that poisons voice anchors) |
+| `execute_code` | Run the helpers that wrap the prompt, parse the delegate return value, score the prose, and call `staging.stage_draft` |
+| `delegate_task` | Generate the prose itself via qwen3-coder:30b on pico (tailnet 100.72.47.4:11434) through Ollama — the wrapped goal goes here, role=`leaf`, no tools |
+| `kanban_heartbeat` | Mandatory before `delegate_task` and at progress milestones during the 3–20 min generation |
+| `kanban_complete` / `kanban_block` | Structured terminal handoff (success / firewall-reject) or escalation (error path) |
 
-## Step 1 — Orient
+## Identity bundle — the curation source-of-truth
 
-Call `kanban_show()` first (per `KANBAN_GUIDANCE` Step 1). The
-response includes your task title, body, prior attempts (retries),
-and the workspace path. If `kanban_show` reports
-`status in {blocked, archived}`, stop — you shouldn't be running.
+The autonovel identity bundle lives in the workspace at:
 
-## Step 2 — Read identity files
+- `identity/self.md` — POV character + scope
+- `identity/voice_priors.json` — voice register priors
+- `identity/few_shot_bank.md` — recent successful samples; the anchor selector picks 2 by POV
+- `identity/soul.md` — long-form persona context
 
-The four identity files inform voice + scope. Read them directly with
-`read_file` (NOT via `skill_view`, which prepends an attribution
-preamble per bd-b5p.5 OQ-2 that poisons the voice anchors). These are
-tool-context reads (content the worker actively uses), distinct from
-the cwd-auto-injected `CLAUDE.md` (which is ambient project
-guidance — already in your system prompt, per OQ-K-1; do NOT re-read
-it).
+These four files inform voice + scope. Read them with `read_file`. Do
+NOT route them through `skill_view`. Do NOT duplicate or paraphrase
+their content in this skill — they are the source of truth, this
+file is the worker's instruction layer.
 
-- `$HERMES_KANBAN_WORKSPACE/identity/self.md`
-- `$HERMES_KANBAN_WORKSPACE/identity/voice_priors.json`
-- `$HERMES_KANBAN_WORKSPACE/identity/few_shot_bank.md`
-- `$HERMES_KANBAN_WORKSPACE/identity/soul.md`
+After `kanban_show()` orients you, `read_file` each of the four
+identity paths — orient first (per `KANBAN_GUIDANCE` Step 1), then
+load the identity bundle.
 
-## Step 3 — Wrap the draft prompt (`execute_code`)
+## Generation contract — `delegate_task`
 
-Run the Phase 2 helpers via `execute_code` to assemble the wrapped
-goal string + extract the POV anchors. The snippet (verbatim from
-bd-b5p.5.6 Step 2 with workspace-relative paths):
-
-```python
-import sys
-sys.path.insert(0, "/home/ubuntu/explore/autonovel")
-sys.path.insert(0, "/home/ubuntu/explore/autonovel/hermes-skills")
-
-import importlib.util
-spec = importlib.util.spec_from_file_location(
-    "hermes_skills.autonovel_phase2.runner",
-    "/home/ubuntu/explore/autonovel/hermes-skills/autonovel-phase2/runner.py",
-)
-runner = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(runner)
-
-from hermes_skills.autonovel_phase2.identity_loader import load_identity
-from hermes_skills.autonovel_phase2.anchor_selector import select_anchors
-from write.prompts import build_draft_system, build_draft_user
-
-ctx = load_identity()
-pov = ctx.get("pov_character", "Karlach")
-anchors = select_anchors(
-    ctx.get("few_shot_bank", ""), pov_character=pov, max_anchors=2
-)
-if anchors:
-    block = (
-        "\n\nVOICE ANCHORS (recent successful samples — match this register):\n"
-        + "\n\n".join(anchors)
-    )
-    ctx["identity"] = ctx.get("identity", "") + block
-
-class _Brief:
-    target_length = 120
-
-system_p = build_draft_system(ctx, ctx.get("soul", ""))
-user_p = build_draft_user(
-    brief=_Brief(), context=ctx, chapter_num=1, total_chapters=1,
-    previous_chapter_tail="", seeds=None, length_retry=False,
-    previous_word_count=0, length_enforcement="prompt",
-)
-wrapped = runner._wrap_prompt(system_p, user_p)
-print("__WRAPPED_GOAL_BEGIN__")
-print(wrapped)
-print("__WRAPPED_GOAL_END__")
-import json as _json
-print("__ANCHORS_JSON_BEGIN__")
-print(_json.dumps(anchors))
-print("__ANCHORS_JSON_END__")
-```
-
-Capture the wrapped goal between `__WRAPPED_GOAL_BEGIN__` /
-`__WRAPPED_GOAL_END__`; the anchors JSON between
-`__ANCHORS_JSON_BEGIN__` / `__ANCHORS_JSON_END__` carries forward to
-Step 5.
-
-## Step 4 — Generate via `delegate_task`
-
-This is the canonical inside-one-run use of `delegate_task` (NOT a
-board substitute — that's what `kanban_create` is for; per
-`KANBAN_GUIDANCE` §Do NOT — this is a short reasoning subtask inside
-YOUR run).
-
-Generation runs typically 3-20 minutes on qwen3-coder. **Before** the
-call, emit `kanban_heartbeat(note="generating draft via delegate_task")`
-so the dispatcher's `dispatch_stale` clock starts from the heartbeat,
-not from worker startup. A long generation without a heartbeat is the
-path to `dispatch_stale` reclaim mid-generation; heartbeats every few
-minutes during long ops are the documented best practice.
+The prose itself is generated by Hermes's `delegate_task` tool, used in
+its canonical inside-one-run sense (a short reasoning subtask inside
+YOUR run — NOT a board substitute; for cross-job handoffs use
+`kanban_create`). The wrapped goal is assembled inside `execute_code`
+from `autonovel_phase2/runner.py` helpers (`_wrap_prompt`,
+`build_draft_system`, `build_draft_user`, `select_anchors`,
+`load_identity`); the call shape is:
 
 ```
-delegate_task(
-    goal=<wrapped goal from Step 3>,
-    context="",
-    toolsets=[],
-    role="leaf",
-    max_iterations=10,
-)
+delegate_task(goal=<wrapped goal>, context="", toolsets=[], role="leaf", max_iterations=10)
 ```
 
-Capture the JSON-string return value. Shape:
+`role="leaf"` keeps the child single-shot (non-leaf roles can recursively
+dispatch). `toolsets=[]` is deliberate: a prose-generation child does
+not need tools, and passing tools risks tangents. `max_iterations=10` is
+the Pattern-5-validated bound.
 
-```json
-{"results": [{"summary": "...", "child_session_id": "..."}]}
-```
+The return value is a JSON string of shape
+`{"results": [{"summary": "...", "child_session_id": "..."}]}` — parse
+via `runner._extract_summary` and `runner._check_preamble` (the latter
+raises on preamble leakage, a known model regression mode).
 
-**Two timeout clocks apply** (per OQ-K-2 of bd-b5p.7.1):
+## Scoring + staging
 
-- **`delegate_task` per-child timeout** —
-  `delegation.child_timeout_seconds` in `~/.hermes/config.yaml`. The
-  Hermes default is **600s** (10min); for this worker the operator
-  has bumped it to **1800s** (30min) so it aligns with the worker's
-  `--max-runtime 30m` budget (see §3.2 of bd-b5p.7 spec). If the
-  delegate child stalls past 1800s, `delegate_task` returns a
-  timeout result and YOU REMAIN ALIVE — handle it via `kanban_block`
-  (not `kanban_complete`).
-- **Worker `--max-runtime 30m`** — enforced by the dispatcher
-  (`kanban_db.py:4343-4421 enforce_max_runtime`). On overrun the
-  whole worker process is SIGTERMed then SIGKILLed; the task
-  re-queues. Nothing you can do from inside.
+After extracting the prose, score and stage inside `execute_code`:
 
-## Step 5 — Extract, score, stage (`execute_code`)
+- `evaluate.slop_score(prose)["slop_penalty"]` → float (production
+  threshold 3.0; the firewall is internal to `stage_draft`)
+- `voice_match.voice_match_score(prose, anchors)` → float (POV-aware)
+- `staging.stage_draft(prose, slop_penalty, voice_match_score)` → returns
+  an item with `queue_id` + `file_path`, OR `None` when the slop
+  firewall trips (legitimate FAIL — no file written)
 
-```python
-import sys, json
-sys.path.insert(0, "/home/ubuntu/explore/autonovel")
-sys.path.insert(0, "/home/ubuntu/explore/autonovel/hermes-skills")
+The output file at `publish_queue/<queue_id>.json` is what the future
+Phase-5 publisher consumes; do NOT call `kanban_complete` referencing a
+`queue_id` whose file isn't on disk.
 
-import importlib.util
-spec = importlib.util.spec_from_file_location(
-    "hermes_skills.autonovel_phase2.runner",
-    "/home/ubuntu/explore/autonovel/hermes-skills/autonovel-phase2/runner.py",
-)
-runner = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(runner)
+## Heartbeats
 
-from hermes_skills.autonovel_phase2.staging import stage_draft
-from hermes_skills.autonovel_phase2.voice_match import voice_match_score
-import evaluate
+Generation runs 3–20 minutes on qwen3-coder. **Call `kanban_heartbeat`
+BEFORE `delegate_task`** so the dispatcher's `dispatch_stale` clock
+re-arms from the heartbeat (not from worker startup) — long generation
+without a heartbeat is the path to mid-generation reclaim. During very
+long generations (>10 minutes), heartbeat at meaningful progress points;
+name what's happening (`"delegate child returned, scoring prose"`), not
+`"still working"`.
 
-DELEGATE_JSON = """<paste Step 4 delegate_task return value>"""
-ANCHORS_JSON = """<paste Step 3 anchors JSON>"""
-
-prose = runner._extract_summary(DELEGATE_JSON)
-runner._check_preamble(prose)  # raises on preamble leakage (bd-b5p.5.6 T-D-3)
-anchors = json.loads(ANCHORS_JSON)
-slop = float(evaluate.slop_score(prose).get("slop_penalty", 99.0))
-vm = voice_match_score(prose=prose, anchor_passages=anchors)
-item = stage_draft(prose=prose, slop_penalty=slop, voice_match_score=vm)
-
-queue_id = item.queue_id if item is not None else None
-file_path = str(item.file_path) if item is not None else None
-print("__STAGE_RESULT_BEGIN__")
-print(json.dumps({
-    "queue_id": queue_id,
-    "slop_penalty": slop,
-    "voice_match": vm,
-    "file_path": file_path,
-    "draft_excerpt": prose[:240],
-    "status": "PASS" if item is not None else "FAIL",
-}))
-print("__STAGE_RESULT_END__")
-```
-
-`stage_draft` returns `None` when the slop firewall trips (high
-`slop_penalty`) — that's a legitimate FAIL outcome, NOT a worker
-crash. Continue to Step 6 with `queue_id=None` + `status=FAIL` +
-empty artifacts.
-
-## Step 6 — Complete
-
-Call `kanban_complete(summary=..., metadata=..., artifacts=...)` with
-the captured result. The metadata schema + artifacts list are FIXED
-(downstream parsers + future Phase 5 publisher depend on the shape):
+## Handoff — `kanban_complete` shape
 
 ```python
 kanban_complete(
     summary=f"drafted {queue_id[:8] if queue_id else 'none'}... slop={slop:.2f} voice_match={vm:.2f} status={status}",
     metadata={
-        "queue_id": queue_id,        # hex string when PASS; None on FAIL
-        "slop_penalty": slop,        # float; evaluate.slop_score result
-        "voice_match": vm,           # float; voice_match_score result
-        "draft_excerpt": prose[:240],  # first 240 chars of prose
+        "queue_id": queue_id,        # hex string on PASS; None on FAIL
+        "slop_penalty": slop,        # float — evaluate.slop_score
+        "voice_match": vm,           # float — voice_match_score
+        "draft_excerpt": prose[:240],
         "status": status,            # "PASS" | "FAIL"
     },
     artifacts=[file_path] if file_path else [],
 )
 ```
 
-The `artifacts=[file_path]` parameter is the canonical way to
-reference produced files (per OQ-K-3 of bd-b5p.7.1 /
-`tools/kanban_tools.py:392-460`) — the gateway notifier auto-attaches
-the file, and `kanban_show` lists it visibly. Do NOT also stuff
-`file_path` into the `metadata` dict; it belongs in `artifacts`.
-`worker_session_id` is auto-stamped by
-`tools/kanban_tools.py:118-129` — never set it yourself.
-
-**Do NOT** call `kanban_complete` if Step 5 raised, if `prose` was
-empty, or if `delegate_task` returned an error. In those cases call
-`kanban_block(reason="<one-line diagnosis>")` instead — the dispatcher
-surfaces blocks for human triage rather than recording fabricated
-success.
+The `artifacts=[file_path]` parameter is the canonical way to surface
+produced files (per OQ-K-3 / `tools/kanban_tools.py:392-460`); the
+gateway notifier auto-attaches and `kanban_show` lists it visibly. Do
+NOT stuff `file_path` into the `metadata` dict — that bypasses the
+notifier. `worker_session_id` is auto-stamped by the substrate
+(`tools/kanban_tools.py:118-129`); never set it yourself.
 
 ## Failure modes
 
 | Symptom | Action |
 |---|---|
-| `delegate_task` returned `{"error": ...}` | `kanban_block(reason="delegate_task failed: <error>")`. Do NOT retry blindly. |
-| `delegate_task` returned a TIMEOUT result (per-child 1800s budget per OQ-K-2) | `kanban_block(reason="delegate_task child timeout — model stalled past 1800s")`. This is distinct from the 30m worker SIGTERM. |
-| `_check_preamble(prose)` raised (preamble leakage) | `kanban_block(reason="prose contained delegate preamble — likely model regression")`; comment with the offending excerpt. |
-| `stage_draft` returned `None` (slop / voice firewall) | `kanban_complete(... status=FAIL, queue_id=None, artifacts=[] ...)` — this IS a real result; the firewall did its job. Don't block. |
-| `kanban_heartbeat` raised | Continue silently; the dispatcher's grace window is the safety net. |
-| Worker crashes between Step 4 and Step 6 | Dispatcher marks the run `crashed`; next dispatch tick reclaims (subject to `--max-retries`). No special action — exiting without `kanban_complete` triggers `dispatch_stale` re-queue at the substrate level. |
-| Worker SIGTERMed at 30m (`--max-runtime`) by dispatcher | Whole worker pid dies; task re-queues `ready`. Nothing the worker can do. |
+| `delegate_task` returned `{"error": ...}` | `kanban_block(reason="delegate_task failed: <error>")` — do not retry blindly |
+| `delegate_task` child timed out (per-child 1800s budget per OQ-K-2 / `delegation.child_timeout_seconds`) | `kanban_block(reason="delegate_task child timeout — model stalled past 1800s")` — distinct from the worker SIGTERM below |
+| `_check_preamble(prose)` raised (preamble leakage) | `kanban_block(reason="prose contained delegate preamble — likely model regression")` + `kanban_comment` with the offending excerpt |
+| `stage_draft` returned `None` (slop / voice firewall) | `kanban_complete(... status="FAIL", queue_id=None, artifacts=[])` — this IS a real outcome; the firewall did its job |
+| Worker SIGTERMed at 30m (`--max-runtime`, enforced by `kanban_db.py:4343-4421`) | Whole process dies; task re-queues. Nothing you can do from inside |
 
-Exiting without `kanban_complete` or `kanban_block` means the task is
-marked `dispatch_stale` after `kanban.dispatch_stale_timeout_seconds`
-(default 4h) and re-queues as `ready`. This is the substrate-level
-"no completion = no success" invariant (per `kanban-worker/SKILL.md`)
-and replaces the bd-b5p.5.8 ad-hoc verify-queue-file guard with a
-uniformly-applied gate.
+Two timeout clocks: the `delegate_task` per-child (1800s, recoverable
+via `kanban_block`) and the worker `--max-runtime 30m` SIGTERM
+(substrate-enforced, unrecoverable). Conflating them mishandles a
+recoverable delegate timeout as fatal, or vice-versa.
+
+Exiting without `kanban_complete` or `kanban_block` causes the task to
+be marked `dispatch_stale` after `kanban.dispatch_stale_timeout_seconds`
+(default 4h) and re-queued as `ready`. The structured handoff IS the
+verification gate.
+
+## Block reasons that get answered fast
+
+Bad: `"stuck"`. Good: one sentence naming the specific decision /
+missing input.
+
+- `kanban_block(reason="delegate_task child timeout — model stalled past 1800s")`
+- `kanban_block(reason="identity file missing: identity/voice_priors.json")`
+- `kanban_block(reason="Ollama at 100.72.47.4:11434 unreachable")`
 
 ## Do NOT
 
-- Do NOT invoke `terminal_tool` for kanban board operations — use the
-  `kanban_*` tools (per built-in `kanban-worker/SKILL.md`; the CLI
-  fails in containerized backends).
-- Do NOT call `kanban_complete` with fabricated metadata (the
-  dispatcher logs the run row durably; downstream readers will catch
-  invented `queue_id`s on the next read — that was the bd-b5p.5.7
-  confabulation bug pattern at a different layer).
-- Do NOT call `delegate_task` recursively or as a board substitute
-  (per `KANBAN_GUIDANCE` §Do NOT).
-- Do NOT invoke `python3 runner.py` standalone via `terminal_tool` —
-  `runner.py` is a HELPER LIBRARY, not an executable. That was the
-  bd-b5p.5.5 broken-invocation pattern this kanban shape supersedes.
-  Use `delegate_task` (Step 4) instead.
-- Do NOT call `kanban_complete` if `publish_queue/<queue_id>.json`
-  doesn't exist on disk (the staging helper writes-then-returns; if
-  `item is None`, the file isn't there).
-- Do NOT re-read `CLAUDE.md` / `AGENTS.md` from the workspace — the
-  agent's `prompt_builder` cwd-scan already auto-injected them at
-  worker startup (per OQ-K-1 of bd-b5p.7.1). Re-reading wastes tool
-  turns and can confuse the agent about which `CLAUDE.md` is
-  canonical.
+- **Do NOT invoke `terminal_tool` for kanban board operations** — use the
+  `kanban_*` tools (the CLI fails in containerized backends; per the
+  built-in `kanban-worker/SKILL.md`).
+- **Do NOT call `delegate_task` recursively or as a board substitute** —
+  for cross-job handoffs use `kanban_create` (per `KANBAN_GUIDANCE` §Do NOT).
+- **Do NOT invoke `python3 runner.py` standalone via `terminal_tool`** —
+  `runner.py` is a helper library, not an executable. That was the
+  bd-b5p.5.5 broken-invocation pattern this worker shape supersedes.
+- **Do NOT modify the `identity/*` files** mid-run — they are the
+  read-only curation source-of-truth.
+- **Do NOT call `kanban_complete` with fabricated `queue_id`** — the
+  staging helper is the only thing that writes to `publish_queue/`; if
+  `stage_draft` returned `None`, use the FAIL envelope
+  (`status="FAIL"`, `queue_id=None`, `artifacts=[]`).
+- **Do NOT list `created_cards`** on `kanban_complete` — this worker
+  spawns no child cards.
+- **Do NOT re-state the `KANBAN_GUIDANCE` lifecycle** — it's already in
+  your system prompt; this skill is the autonovel-specific layer on top.
