@@ -30,17 +30,44 @@ is a legitimate outcome (the firewall did its job) — not a worker crash.
 One card → one worker run → one staged draft (PASS) **or** one recorded
 firewall-rejection (FAIL).
 
-## Workspace
+## Workspace — orient FIRST, before any file read
 
 `dir:/home/ubuntu/explore/autonovel` — the autonovel repo root, set by the
-enqueue script's `--workspace`. The worker's cwd IS this workspace, so
+enqueue script's `--workspace`. Hermes exports the absolute path in the
+env var `$HERMES_KANBAN_WORKSPACE` and surfaces it again in the
+`Workspace:` line of `kanban_show()`'s `worker_context`. The dispatcher
+also sets the spawned worker's cwd to this directory
+(`kanban_db.py:5800`, `subprocess.Popen(cwd=workspace, ...)`).
+
+**However**, empirical worker logs (run `t_41f4bb8f` on 2026-05-30, 4
+failed attempts) show the worker's effective cwd at first tool turn is
+sometimes NOT the workspace — the agent walks relative paths from
+`/home/ubuntu` (or another parent) and burns 5–10 minutes on
+`find . -name "identity"`. Treat the cwd as **unknown** and orient
+explicitly:
+
+```bash
+# After `kanban_show()` (Step 1), before any read_file / execute_code:
+cd "$HERMES_KANBAN_WORKSPACE"   # or use the absolute path the Workspace: line names
+pwd                              # confirm you're in /home/ubuntu/explore/autonovel
+```
+
+Every relative path in this skill (`identity/self.md`,
+`publish_queue/<queue_id>.json`, `autonovel_phase2/runner.py`) is
+**workspace-relative** — equivalent to
+`/home/ubuntu/explore/autonovel/<path>` or
+`$HERMES_KANBAN_WORKSPACE/<path>`. If you skip the `cd`, prefix every
+read with the absolute workspace path; do NOT walk relative paths
+against an unknown cwd.
+
+Because the dispatcher's intended cwd IS this workspace,
 `prompt_builder._inject_claude_md()` has already auto-injected the
-workspace `CLAUDE.md` and `AGENTS.md` into the system prompt at startup
+workspace `CLAUDE.md` / `AGENTS.md` into the system prompt at startup
 (per OQ-K-1). Do NOT re-read `CLAUDE.md` or `AGENTS.md` — that wastes
 tool turns and creates confusion about which is canonical.
 
-Writes land at `publish_queue/<queue_id>.json` via the `staging.stage_draft`
-helper. Nothing else gets written.
+Writes land at workspace-relative `publish_queue/<queue_id>.json` via
+the `staging.stage_draft` helper. Nothing else gets written.
 
 ## Profile + tools available
 
@@ -59,21 +86,25 @@ other Hermes work). Tools this work uses:
 
 ## Identity bundle — the curation source-of-truth
 
-The autonovel identity bundle lives in the workspace at:
+The autonovel identity bundle lives in the workspace, at workspace-relative
+paths (resolve against `$HERMES_KANBAN_WORKSPACE` =
+`/home/ubuntu/explore/autonovel/`):
 
 - `identity/self.md` — POV character + scope
 - `identity/voice_priors.json` — voice register priors
 - `identity/few_shot_bank.md` — recent successful samples; the anchor selector picks 2 by POV
 - `identity/soul.md` — long-form persona context
 
-These four files inform voice + scope. Read them with `read_file`. Do
-NOT route them through `skill_view`. Do NOT duplicate or paraphrase
-their content in this skill — they are the source of truth, this
-file is the worker's instruction layer.
+These four files inform voice + scope. Read them with `read_file` AFTER
+the Workspace-orient `cd` (or with the absolute prefix
+`/home/ubuntu/explore/autonovel/identity/...` if you opted to skip the
+`cd`). Do NOT route them through `skill_view`. Do NOT duplicate or
+paraphrase their content in this skill — they are the source of truth,
+this file is the worker's instruction layer.
 
-After `kanban_show()` orients you, `read_file` each of the four
-identity paths — orient first (per `KANBAN_GUIDANCE` Step 1), then
-load the identity bundle.
+Order of operations: `kanban_show()` to orient (KANBAN_GUIDANCE Step 1)
+→ `cd "$HERMES_KANBAN_WORKSPACE"` to anchor the cwd (Workspace section
+above) → `read_file` each of the four identity paths.
 
 ## Generation contract — `delegate_task`
 
@@ -151,6 +182,7 @@ notifier. `worker_session_id` is auto-stamped by the substrate
 
 | Symptom | Action |
 |---|---|
+| `read_file identity/self.md` → `File not found` (cwd drift) | `cd "$HERMES_KANBAN_WORKSPACE"` and retry; do NOT `find . -name "identity"` — that wastes the runtime budget. If cwd is unreachable, prefix the absolute path `/home/ubuntu/explore/autonovel/identity/self.md` |
 | `delegate_task` returned `{"error": ...}` | `kanban_block(reason="delegate_task failed: <error>")` — do not retry blindly |
 | `delegate_task` child timed out (per-child 1800s budget per OQ-K-2 / `delegation.child_timeout_seconds`) | `kanban_block(reason="delegate_task child timeout — model stalled past 1800s")` — distinct from the worker SIGTERM below |
 | `_check_preamble(prose)` raised (preamble leakage) | `kanban_block(reason="prose contained delegate preamble — likely model regression")` + `kanban_comment` with the offending excerpt |
