@@ -30,6 +30,31 @@ is a legitimate outcome (the firewall did its job) — not a worker crash.
 One card → one worker run → one staged draft (PASS) **or** one recorded
 firewall-rejection (FAIL).
 
+## Pre-flight — check the pico exclusive-access lock
+
+Pico inference (Ollama qwen3-coder:30b) is a shared resource. The
+bench-matrix and any future heavy bench/training holds it exclusively
+during a run; this worker must NOT contend with it (contention OOMs
+pico's ~30GB Metal cliff and corrupts the matrix's measurements —
+empirically caught 2026-05-30).
+
+**Before any pico-bound LLM call**, source the lock helper and check:
+
+```bash
+source /home/ubuntu/dotfiles/local-models/lib/pico_lock.sh
+if ! pico_acquire autonovel-phase2-worker 1800 "drafting daily fanfic"; then
+    # Pico is held by another consumer. Block this task with the holder's
+    # reason as the block message; the dispatcher will retry per cron.
+    kanban_block <task_id> "pico held by another consumer; will retry next cron"
+    exit 0
+fi
+trap 'pico_release autonovel-phase2-worker 2>/dev/null || true' EXIT
+```
+
+The lock auto-expires (1800s = 30m, matches our max-runtime). If pico is
+free, you take the lock + proceed. If not, you block cleanly and exit;
+the next cron tick reattempts.
+
 ## Workspace — orient FIRST, before any file read
 
 `dir:/home/ubuntu/explore/autonovel` — the autonovel repo root, set by the
