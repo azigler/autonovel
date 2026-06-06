@@ -12,6 +12,12 @@ typeset/chapters_content.tex
 
 # Write loop run state (keep draft.md, ignore transient state)
 write/runs/*/state.json
+# Daily smoke/cron drafts — kept on disk as creative output, ignored by git.
+# (Hermes-managed Phase 1 + Phase 2 crons were paused 2026-06 when the Hermes
+# substrate was uninstalled; pattern stays so any future automated draft
+# producer doesn't pollute git status.)
+write/runs/phase1-smoke/draft-*.md
+write/runs/*/draft-*.md
 # publish_queue/ — tracked (post packages are artifacts we want in git)
 api/cache/
 

@@ -85,9 +85,23 @@ Config files created:
 
 Same probe routed through CCR's anthropic-messages endpoint instead of direct Ollama. Added `via-ccr-anthropic` provider to pi.dev's `models.json` pointing at `http://127.0.0.1:3456`, model `pico-ollama,qwen3-coder:30b`. Result: **same failure mode** — Qwen3 emitted `<function=read>` text, pi.dev did NOT intercept, no tool execution.
 
-This confirms the gap is in pi.dev's tool-schema injection layer (or how it negotiates with custom providers), NOT in the API translation. Direct `curl http://100.72.47.4:11434/v1/chat/completions` with a `tools` parameter (verified separately, see GUARDRAILS G9) DOES return structured `tool_calls[]`. So pi.dev is the missing layer.
+**However, this gap is more nuanced than first reported (research-agent + reproduction 2026-05-25 evening):**
 
-**The HIGH-severity tool-use gap is real and confirmed on both API paths.**
+A research agent intercepted pi.dev's actual wire payload via a logging HTTP proxy and confirmed:
+- pi.dev's openai-completions adapter DOES inject a well-formed `tools: [{type:"function", function:{name:"read", parameters:{...}}}]` array
+- Source verified: `~/.../node_modules/@earendil-works/pi-ai/dist/providers/openai-completions.js:421-435`
+- Pi.dev has a harmony-text recovery path that CAN parse `<function=...>` XML and execute (per agent's packet capture in some scenarios)
+
+Empirical reproduction (2026-05-25 evening): direct curl to BOTH `/v1/chat/completions` AND `/api/chat` with same tools schema → Qwen3 Ollama returns 2 structured `tool_calls[]` ✅. But pi.dev's request to the same Qwen3 → XML text, no execution.
+
+**Working hypothesis on the gap:** pi.dev's request differs from direct curl in some way (probably system prompt context, message wrapping, or tool-name shape — pi.dev uses bare `read` while direct curl uses `read_file`). Qwen3 Ollama's structured-tool-call path may be context-sensitive — it falls back to harmony XML for ambiguous prompts. Pi.dev's harmony-recovery path is present but unreliable.
+
+**Severity remains HIGH for D's purposes**: even if all the components are theoretically present, the integration is empirically flaky for custom-provider tool-use. Building an agent on top of "sometimes works" isn't viable. Workarounds:
+
+1. **Build a 30-line pi.dev extension** that wraps the openai-completions adapter and forces structured tool-call parsing (uses ExtensionAPI hook `before_provider_request`)
+2. **Use MLX backend instead of Ollama for tool-use** (research agent's recommendation; MLX server's Qwen-shaped parser path may be more reliable)
+3. **Don't use pi.dev for tool-heavy work**; reserve for prose-only workloads (the working part)
+4. **Wait for pi.dev refactor freeze to end** (2026-05-17+); upstream issues #4439, #3976, #4625 all relate to this; PRs were closed unmerged but may be revisited post-refactor
 
 ## Probes deferred to follow-up
 

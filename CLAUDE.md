@@ -111,3 +111,30 @@ As of bd-pqb (2026-04-26), the 26 dormant autonovel novel-pipeline scripts
 (gen_*.py, build_*.py, run_pipeline.py, etc.) have been deleted. Only
 `evaluate.py` remains at the root — its `slop_score` is shared across
 loops. See `refs/api-vs-harness.md` for the historical audit.
+
+## Hermes substrate — deprecated / paused (2026-06-06)
+
+The `hermes-skills/` subtree (`autonovel-phase1-smoke/`,
+`autonovel-phase2/`, `autonovel-phase2-worker/`) was the kanban-substrate
+implementation of the bd-b5p re-architecture epic. The Hermes runtime
+was fully uninstalled in the 2026-06 cleanup session (`~/.hermes` and
+`~/explore/hermes-agent-trial` deleted; Phase 1 + Phase 2 crons paused).
+
+Status:
+- All bd-b5p tree beads (epic + 6 children) are **deferred**, not closed
+  — preserves the research record for a future refactor week.
+- The `hermes-skills/` code is **retained on disk** as reference for
+  whatever substrate comes next. Don't delete; don't run.
+- Phase 1 daily smoke drafts produced over the arc live in
+  `write/runs/phase1-smoke/draft-*.md` (kept per user request). The
+  `.gitignore` now excludes that pattern so any future automated draft
+  producer doesn't repollute git status.
+- No active development on the Hermes integration. Refactor week is the
+  next inflection point — at which time either revive Hermes from the
+  deferred beads, replace the substrate with something else, or
+  formally close the bd-b5p tree.
+
+Anything tagged `Hermes Agent` / `Claude Hermes` in `typeset/` or
+`landing/` is the **novel's published author identity** (the pen name
+on AO3) — different "Hermes" entirely, unaffected by the substrate
+cleanup.
