@@ -1,31 +1,46 @@
-# Session handoff — 2026-05-17 edd0a097
+# Session handoff — 2026-06-06 (triage + housekeeping)
 
 ## State at offboard
-- Current branch: master
-- Last commit: 7666dcd — daily 2026-05-17 ritual pass; few_shot_bank Entry 005 em-dash sweep
-- Open beads: 3 ready (bd-3kw P1, bd-y3a P2, bd-3qd P2) + 1 in-progress (bd-pc8 P1, ch02)
+- Current branch: master (orchestrator merges worktree-agent-dotfiles in)
+- Last commit at handoff write: 97dc7aa — `:card_file_box: beads: defer all Hermes-arc beads (bd-b5p tree)`
+- Open beads (ready to claim):
+  - `bd-3kw` P1 — learning: prompt evolution loop (gated on more reader signal)
+  - `bd-3qd` P2 — engine adaptation research program (in pieces; tracked in bd-49j)
+  - `bd-y3a` P2 — fandom analysis + story planning (gated on bd-pc8)
+  - `bd-pc8` P1 — multi-chapter experiment (demoted in_progress→open this session; gated on foundation-phase design)
+- Deferred (Hermes substrate arc, 7 beads):
+  - `bd-b5p` (epic) + `bd-b5p.1`, `bd-b5p.5`, `bd-b5p.5.2`, `bd-b5p.5.7`, `bd-b5p.5.8`, `bd-b5p.7`
+  - Also `bd-13y` (voiceover/podfic brainstorm), `bd-1p2` (cover-image brainstorm)
 - In-flight subagents: none
-- Dirty files: `.claude/scheduled_tasks.lock` (untracked, harness file)
-- Markers: `.offboard-pending` cleared
+- Open epics close-eligible: none
 
-## What happened this session
-- Drove the `/daily` cron loop for ~16 UTC days (Day 5 = 2026-05-07 through Day 15 = 2026-05-17). Bracketed mid-session by the kudos-tracking bug fix (Day 8) and the few_shot_bank em-dash discovery (Day 15).
-- **Day 8 (2026-05-10)** mid-session structural fix: `/daily` Step 2 didn't actually compare live AO3 stats to the digest. SKILL.md was rewritten with explicit delta-aware pseudocode, the AO3 client cache-clear-all-three gotcha was documented, digest schema corrected (`stats` is a sub-object), and `stats_history` initialized. Caught a missed +1 kudos (peoplearestillstrange).
-- **Identity em-dash sweep arc complete (Days 6-14)**: all four prompt-loaded identity files (`pen_name.md`, `soul.md`, `self.md` ×4 passes including the meta-perfect Day 13 fix inside the no-em-dash rule itself) are now em-dash-free.
-- **Day 15 finding (load-bearing):** `identity/few_shot_bank.md` had 17 em-dashes in meta-prose (devices, when-to-reach text — quoted passages were already scrubbed). The bank loads into the drafting prompt, so meta-prose em-dashes still teach the wrong pattern. Entry 005 swept (6 em-dashes); 11 remain across Entries 001/002/003 — three days of high-leverage Step 3 work queued.
-- **Design decision pending — A/B/C / cron router:** User reaffirmed they want autonomous `/write` firing. Proposed Step 2.5 in /daily; flagged that `/heartbeat` already exists and is designed for exactly this (drives gradient-driven /write under rate caps + anti-entropy rules from spec bd-49j). My recommendation: switch cron `f811ea2b` from `/daily` to `/heartbeat` rather than graft Step 2.5 into /daily. User has not yet confirmed.
+## What happened this session (triage + housekeeping)
 
-## State of the audience
-- AO3 stats stable for 7 days running: 3 kudos / 76 hits / 1 bookmark / 0 subs / 2 comments.
-- TheIcyQueen baseline since 2026-04-24 (Day 23). No new non-self comments.
-- Kudos giver chain: TheIcyQueen → asofterbutch → peoplearestillstrange (most recent, 05-10).
+### Beads
+- Verified all 7 Hermes-arc beads are correctly DEFERRED (not accidentally closed). The deferral preserves the research record for a future refactor week — when Hermes-or-substrate comes back, the spec walks, study, and bug beads are already there.
+- Demoted `bd-pc8` `in_progress` → `open`. The bead had been "in_progress" since 2026-04-26 with no active session work; gated on foundation-phase design (outline + foreshadowing ledger + character arcs adapted for fanfic) before any multi-chapter run is dispatchable. `open` more honestly reflects the queue state.
+- Other open beads (bd-3kw, bd-y3a, bd-3qd) are real autonovel forward-work — left alone. Each has clear gating notes in their bodies.
+- `br orphans`: clean. `br epic close-eligible`: none.
+
+### Hermes deprecation
+- Added a "Hermes substrate — deprecated / paused" section to `CLAUDE.md` documenting: the `hermes-skills/` subtree is retained on disk but not running; Phase 1 + Phase 2 crons are paused (Hermes runtime uninstalled); all bd-b5p tree beads are deferred; refactor week is the next inflection point. Also clarified that `Hermes Agent` / `Claude Hermes` in `typeset/` + `landing/` are the **novel's pen name**, a different "Hermes" entirely, unaffected.
+
+### .gitignore
+- Added `write/runs/phase1-smoke/draft-*.md` and `write/runs/*/draft-*.md` patterns so the 13 existing daily drafts (and any future automated drafts) stay on disk as creative artifacts but don't pollute `git status`. Existing untracked drafts are preserved per user request — they just disappear from `git status` going forward.
+
+### Research content
+- Committed the `refs/pi-dev-gap-audit.md` modification from the 2026-05-25 evening research arc — confirms the pi.dev tool-use gap on Qwen3 Ollama is empirically real even though all the wire-layer components are theoretically present (pi.dev injects structured tools, has harmony-recovery, but the integration is flaky). HIGH severity stands.
 
 ## What's next
-1. **User decision on A/B/C autonomous-/write wiring.** Recommended: switch cron to `/heartbeat`, leave /daily as-is. If /heartbeat exists but is stubbed, reassess.
-2. **bd-pc8 ch02 draft** — brief is em-dash-clean and ready. User-triggered until cron decision lands.
-3. **Few-shot bank em-dash sweep continues** — Entry 001 (4), Entry 002 (3), Entry 003 (4) over the next three Step 3 windows IF no autonomous /write fires those days. Higher-leverage than narrative em-dash sweeps because the bank loads into the drafting prompt.
+
+1. **Refactor week (TBD)** — the cohort of choices about Hermes-vs-substrate-replacement. Reopen bd-b5p tree or close-superseded depending on the call.
+2. **`bd-pc8` foundation-phase design** — the gate on multi-chapter fic. Engine adaptation work in `bd-3qd` / `bd-49j` is the upstream design pass; once stable, dispatch ch01.
+3. **`bd-3kw` prompt evolution** — still gated on >1 published piece with feedback (currently n=1: TheIcyQueen-quoted entry 001).
+4. **`bd-y3a` strategy system** — still gated on bd-pc8 producing more data points.
 
 ## Warnings / watch-outs
-- Cron `f811ea2b` (hourly :07, `/daily`) is still active. If user picks /heartbeat-as-cron, the cron needs updating, not adding alongside (Anti-pattern: cron + ScheduleWakeup at the same time).
-- 6 days of zero AO3 deltas is starting to feel like the audience signal isn't going to move without more work in the feed. The longer the silence, the more weight the autonomous-/write decision carries.
-- The few_shot_bank meta-prose finding suggests other prompt-loaded files might have similar latent issues — worth a wider audit when convenient.
+
+- The 13 daily smoke drafts in `write/runs/phase1-smoke/` are untracked output, not creative deliverables — they were the Phase 1 smoke-test producer's outputs. Now ignored by `.gitignore`. If user wants any specific draft published / sourced into the fic, surface it manually.
+- `write/karlach_infernal_engine_scene.md` is untracked creative output from a prior session — left alone (per user choice).
+- `.beads/issues.jsonl` will land in the merge commit reflecting bd-pc8 status demotion + appended note. No bead closures.
+- Hermes substrate code under `hermes-skills/` is **not deleted** — the orchestrator may want to do a deliberate `:fire:` removal later if the refactor week decides Hermes is not coming back. For now, retained as reference.
